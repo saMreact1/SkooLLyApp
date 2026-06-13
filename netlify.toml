@@ -1,6 +1,6 @@
 [build]
   command = "npm run build"
-  publish = "dist/skoo-lly-app/browser"
+  publish = "dist/skooLLyApp/browser"
 
 [build.environment]
   NPM_FLAGS = "--legacy-peer-deps"
