@@ -1,0 +1,146 @@
+<div class="page-container">
+  <header class="page-header">
+    <div class="header-content">
+      <a class="back-link" routerLink="/app/communication/announcements">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="back-icon">
+          <polyline points="15 18 9 12 15 6"></polyline>
+        </svg>
+        Back to announcements
+      </a>
+      <h1 class="page-title">{{ isEditMode() ? 'Edit Announcement' : 'Create Announcement' }}</h1>
+      <p class="page-subtitle">
+        {{ isEditMode() ? 'Update the announcement details below' : 'Fill in the details to create a new announcement' }}
+      </p>
+    </div>
+  </header>
+
+  @if (errorMessage()) {
+    <div class="alert alert--error">
+      {{ errorMessage() }}
+      <button class="alert-close" (click)="errorMessage.set(null)">×</button>
+    </div>
+  }
+
+  @if (isLoading()) {
+    <div class="loading-state">
+      <div class="spinner"></div>
+      <p>Loading announcement...</p>
+    </div>
+  } @else {
+    <div class="form-card">
+      <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
+        <div class="field">
+          <label class="field__label" for="title">Title</label>
+          <input
+            id="title"
+            type="text"
+            formControlName="title"
+            class="field__input"
+            placeholder="Announcement title"
+          />
+          @if (form.controls.title.invalid && form.controls.title.touched) {
+            <span class="field__error">
+              @if (form.controls.title.errors?.['required']) {
+                Title is required
+              } @else if (form.controls.title.errors?.['minlength']) {
+                Title must be at least 3 characters
+              }
+            </span>
+          }
+        </div>
+
+        <div class="field">
+          <label class="field__label" for="content">Content</label>
+          <textarea
+            id="content"
+            formControlName="content"
+            class="field__input field__textarea"
+            placeholder="Write your announcement content here..."
+            rows="6"
+          ></textarea>
+          @if (form.controls.content.invalid && form.controls.content.touched) {
+            <span class="field__error">
+              @if (form.controls.content.errors?.['required']) {
+                Content is required
+              } @else if (form.controls.content.errors?.['minlength']) {
+                Content must be at least 10 characters
+              }
+            </span>
+          }
+        </div>
+
+        <div class="field-row">
+          <div class="field">
+            <label class="field__label" for="target">Target Audience</label>
+            <select id="target" formControlName="target" class="field__input">
+              @for (t of targets; track t.value) {
+                <option [value]="t.value">{{ t.label }}</option>
+              }
+            </select>
+          </div>
+
+          <div class="field">
+            <label class="field__label" for="priority">Priority</label>
+            <select id="priority" formControlName="priority" class="field__input">
+              @for (p of priorities; track p.value) {
+                <option [value]="p.value">{{ p.label }}</option>
+              }
+            </select>
+          </div>
+        </div>
+
+        <div class="field-row">
+          <div class="field">
+            <label class="field__label" for="publishAt">Schedule Publish</label>
+            <input
+              id="publishAt"
+              type="datetime-local"
+              formControlName="publishAt"
+              class="field__input"
+            />
+            <span class="field__hint">Leave empty to publish immediately</span>
+          </div>
+
+          <div class="field">
+            <label class="field__label" for="expiresAt">Expires At</label>
+            <input
+              id="expiresAt"
+              type="datetime-local"
+              formControlName="expiresAt"
+              class="field__input"
+            />
+            <span class="field__hint">Optional expiration date</span>
+          </div>
+        </div>
+
+        <div class="field field--checkbox">
+          <label class="checkbox-label">
+            <input type="checkbox" formControlName="published" class="checkbox-input" />
+            <span class="checkbox-text">Publish immediately</span>
+          </label>
+          <span class="field__hint">
+            Uncheck to save as draft
+          </span>
+        </div>
+
+        <div class="form-actions">
+          <a class="btn btn--outline" routerLink="/app/communication/announcements">
+            Cancel
+          </a>
+          <button
+            type="submit"
+            class="btn btn--primary"
+            [disabled]="isSubmitting()"
+          >
+            @if (isSubmitting()) {
+              <span class="spinner spinner--sm"></span>
+              {{ isEditMode() ? 'Saving...' : 'Creating...' }}
+            } @else {
+              {{ isEditMode() ? 'Save Changes' : 'Create Announcement' }}
+            }
+          </button>
+        </div>
+      </form>
+    </div>
+  }
+</div>

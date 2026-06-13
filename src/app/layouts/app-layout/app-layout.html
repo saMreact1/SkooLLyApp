@@ -1,0 +1,49 @@
+<div class="layout">
+
+  <!-- Sidebar -->
+  <app-sidebar
+    [isOpen]="sidebarOpen()"
+    (closeRequested)="closeSidebar()"
+  />
+
+  <!-- Mobile overlay — closes sidebar when tapped -->
+  @if (sidebarOpen()) {
+    <div
+      class="layout__overlay"
+      (click)="closeSidebar()"
+      aria-hidden="true"
+    ></div>
+  }
+
+  <!-- Right column: topbar + page content -->
+  <div class="layout__body">
+    <app-topbar (menuToggled)="toggleSidebar()" />
+
+    <main class="layout__main" id="main-content">
+      <router-outlet />
+    </main>
+  </div>
+
+  <!-- Global confirmation modal -->
+  <app-confirmation-modal />
+
+  <!-- Toast notifications -->
+  <div class="toast-container">
+    @for (toast of toasts(); track toast.id) {
+      <div class="toast" [class.toast--message]="toast.type === 'message'" [class.toast--announcement]="toast.type === 'announcement'" (click)="dismissToast(toast.id)">
+        <div class="toast__icon">
+          @if (toast.type === 'message') {
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+          } @else {
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          }
+        </div>
+        <div class="toast__body">
+          <span class="toast__title">{{ toast.title }}</span>
+          <span class="toast__text">{{ toast.body }}</span>
+        </div>
+      </div>
+    }
+  </div>
+
+</div>

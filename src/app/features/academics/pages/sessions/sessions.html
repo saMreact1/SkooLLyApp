@@ -1,0 +1,527 @@
+<div class="page">
+  <div class="page__header">
+    <div>
+      <h1 class="page__title">Academic sessions</h1>
+      <p class="page__sub">Manage school years and their terms</p>
+    </div>
+    <button class="btn-primary" (click)="panelOpen.set(true)">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none"
+           stroke="currentColor" stroke-width="2.5" aria-hidden="true">
+        <line x1="12" y1="5" x2="12" y2="19"/>
+        <line x1="5" y1="12" x2="19" y2="12"/>
+      </svg>
+      New session
+    </button>
+  </div>
+
+  @if (currentSession()) {
+    <div class="active-banner">
+      <span class="active-banner__dot" aria-hidden="true"></span>
+      <strong>{{ currentSession()!.name }}</strong> is the current session
+      &nbsp;·&nbsp; {{ currentSession()!.terms.length }} term(s)
+    </div>
+  }
+
+  @if (isLoading()) {
+    <div class="session-grid">
+      @for (i of [1,2,3]; track i) {
+        <div class="skeleton-card"></div>
+      }
+    </div>
+  }
+
+  @else if (sessions().length === 0) {
+    <div class="empty-state">
+      <svg width="44" height="44" viewBox="0 0 24 24" fill="none"
+           stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+        <rect x="3" y="4" width="18" height="18" rx="2"/>
+        <line x1="16" y1="2" x2="16" y2="6"/>
+        <line x1="8" y1="2" x2="8" y2="6"/>
+        <line x1="3" y1="10" x2="21" y2="10"/>
+      </svg>
+      <p class="empty-state__text">No academic sessions yet</p>
+      <p class="empty-state__sub">Create your first session to get started</p>
+      <button class="btn-primary" (click)="panelOpen.set(true)">
+        Create first session
+      </button>
+    </div>
+  }
+
+  @else {
+    <div class="session-grid">
+      @for (session of sessions(); track session.id) {
+        <div class="session-card"
+             [class.session-card--current]="session.isCurrent">
+
+          <div class="session-card__header">
+            <div>
+              <h2 class="session-card__name">{{ session.name }}</h2>
+              <p class="session-card__dates">
+                {{ formatDate(session.startDate) }} — {{ formatDate(session.endDate) }}
+              </p>
+            </div>
+            <div class="session-card__badges">
+              @if (session.isCurrent) {
+                <span class="badge badge--active">Current</span>
+              }
+              <span class="badge"
+                    [class.badge--active]="session.status === 'ACTIVE'"
+                    [class.badge--inactive]="session.status === 'INACTIVE'"
+                    [class.badge--completed]="session.status === 'COMPLETED'">
+                {{ session.status | titlecase }}
+              </span>
+            </div>
+          </div>
+
+          <!-- Terms list -->
+          <div class="session-card__terms">
+            @if (session.terms.length === 0) {
+              <p class="session-card__no-terms">No terms configured yet</p>
+            } @else {
+              @for (term of session.terms; track term.id) {
+                <div class="term-row">
+                  <div class="term-row__left">
+                    <span class="term-row__name">{{ term.name }}</span>
+                    <span class="term-row__dates">
+                      {{ formatDate(term.startDate) }} — {{ formatDate(term.endDate) }}
+                    </span>
+                  </div>
+                  <div class="term-row__right">
+                    @if (term.isCurrent) {
+                      <span class="term-row__current">current</span>
+                    } @else {
+                      <button class="btn-ghost btn-ghost--xs"
+                              (click)="setCurrentTerm(term)">
+                        Set current
+                      </button>
+                    }
+                    <button class="icon-btn icon-btn--danger"
+                            (click)="deleteTerm(session.id, term)"
+                            [attr.aria-label]="'Delete ' + term.name">
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
+                           stroke="currentColor" stroke-width="2" aria-hidden="true">
+                        <polyline points="3 6 5 6 21 6"/>
+                        <path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/>
+                        <path d="M10 11v6M14 11v6"/>
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+              }
+            }
+          </div>
+
+          <div class="session-card__actions">
+            <button class="btn-ghost" (click)="openTermPanel(session)">
+              + Add term
+            </button>
+            @if (!session.isCurrent) {
+              <button class="btn-ghost btn-ghost--primary"
+                      (click)="setCurrentSession(session)">
+                Set as current
+              </button>
+            }
+            <button class="icon-btn icon-btn--danger"
+                    (click)="deleteSession(session)"
+                    aria-label="Delete session"
+                    style="margin-left: auto">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                   stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <polyline points="3 6 5 6 21 6"/>
+                <path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/>
+                <path d="M10 11v6M14 11v6"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+      }
+    </div>
+  }
+
+  <!-- Create session panel -->
+  @if (panelOpen()) {
+    <div class="panel-backdrop" (click)="closePanel()" aria-hidden="true"></div>
+    <aside class="panel" role="dialog" aria-modal="true"
+           aria-label="Create academic session">
+      <div class="panel__header">
+        <h2 class="panel__title">New academic session</h2>
+        <button class="panel__close" (click)="closePanel()" aria-label="Close">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none"
+               stroke="currentColor" stroke-width="2.5" aria-hidden="true">
+            <line x1="18" y1="6" x2="6" y2="18"/>
+            <line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+      </div>
+      <p class="panel__subtitle">Define the school year name and date range</p>
+
+      @if (errorMessage()) {
+        <div class="alert alert--error">{{ errorMessage() }}</div>
+      }
+
+      <form [formGroup]="sessionForm" (ngSubmit)="submitSession()" novalidate>
+        <div class="field">
+          <label class="field__label">Session name</label>
+          <input type="text" formControlName="name"
+                 class="field__input" placeholder="e.g. 2024/2025"/>
+          @if (sessionForm.controls.name.invalid && sessionForm.controls.name.touched) {
+            <span class="field__error">Session name is required</span>
+          }
+        </div>
+        <div class="field">
+          <label class="field__label">Start date</label>
+          <input type="date" formControlName="startDate" class="field__input"/>
+          @if (sessionForm.controls.startDate.invalid && sessionForm.controls.startDate.touched) {
+            <span class="field__error">Start date is required</span>
+          }
+        </div>
+        <div class="field">
+          <label class="field__label">End date</label>
+          <input type="date" formControlName="endDate" class="field__input"/>
+          @if (sessionForm.controls.endDate.invalid && sessionForm.controls.endDate.touched) {
+            <span class="field__error">End date is required</span>
+          }
+        </div>
+        <button type="submit" class="btn-primary btn--full" [disabled]="isSubmitting()">
+          @if (isSubmitting()) {
+            <span class="spinner" aria-hidden="true"></span> Creating...
+          } @else {
+            Create session
+          }
+        </button>
+      </form>
+    </aside>
+  }
+
+  <!-- Add term panel -->
+  @if (termPanelFor()) {
+    <div class="panel-backdrop" (click)="closePanel()" aria-hidden="true"></div>
+    <aside class="panel" role="dialog" aria-modal="true" aria-label="Add term">
+      <div class="panel__header">
+        <h2 class="panel__title">Add term</h2>
+        <button class="panel__close" (click)="closePanel()" aria-label="Close">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none"
+               stroke="currentColor" stroke-width="2.5" aria-hidden="true">
+            <line x1="18" y1="6" x2="6" y2="18"/>
+            <line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+      </div>
+      <p class="panel__subtitle">
+        Adding to <strong>{{ termPanelFor()!.name }}</strong>
+      </p>
+
+      @if (errorMessage()) {
+        <div class="alert alert--error">{{ errorMessage() }}</div>
+      }
+
+      <form [formGroup]="termForm" (ngSubmit)="submitTerm()" novalidate>
+        <div class="field">
+          <label class="field__label">Term name</label>
+          <input type="text" formControlName="name"
+                 class="field__input"
+                 placeholder="e.g. First Term"
+                 list="term-suggestions"/>
+          <!-- Datalist gives hints without forcing an enum -->
+          <datalist id="term-suggestions">
+            @for (s of termSuggestions; track s) {
+              <option [value]="s"></option>
+            }
+          </datalist>
+          @if (termForm.controls.name.invalid && termForm.controls.name.touched) {
+            <span class="field__error">Term name is required</span>
+          }
+        </div>
+        <div class="field">
+          <label class="field__label">Start date</label>
+          <input type="date" formControlName="startDate" class="field__input"/>
+          @if (termForm.controls.startDate.invalid && termForm.controls.startDate.touched) {
+            <span class="field__error">Start date is required</span>
+          }
+        </div>
+        <div class="field">
+          <label class="field__label">End date</label>
+          <input type="date" formControlName="endDate" class="field__input"/>
+          @if (termForm.controls.endDate.invalid && termForm.controls.endDate.touched) {
+            <span class="field__error">End date is required</span>
+          }
+        </div>
+        <button type="submit" class="btn-primary btn--full" [disabled]="isSubmitting()">
+          @if (isSubmitting()) {
+            <span class="spinner" aria-hidden="true"></span> Adding...
+          } @else {
+            Add term
+          }
+        </button>
+      </form>
+    </aside>
+  }
+</div>
+
+<!--&lt;!&ndash; session-list.component.html &ndash;&gt;-->
+<!--<div class="page">-->
+
+<!--  &lt;!&ndash; Page header — flex row: title left, button right &ndash;&gt;-->
+<!--  <div class="page__header">-->
+<!--    <div>-->
+<!--      <h1 class="page__title">Academic sessions</h1>-->
+<!--      <p class="page__sub">Manage school years and their terms</p>-->
+<!--    </div>-->
+<!--    <button class="btn-primary" (click)="panelOpen.set(true)">-->
+<!--      <svg width="15" height="15" viewBox="0 0 24 24" fill="none"-->
+<!--           stroke="currentColor" stroke-width="2.5" aria-hidden="true">-->
+<!--        <line x1="12" y1="5" x2="12" y2="19"/>-->
+<!--        <line x1="5" y1="12" x2="19" y2="12"/>-->
+<!--      </svg>-->
+<!--      New session-->
+<!--    </button>-->
+<!--  </div>-->
+
+<!--  &lt;!&ndash; Active session banner &ndash;&gt;-->
+<!--  @if (activeSession()) {-->
+<!--    <div class="active-banner">-->
+<!--      <span class="active-banner__dot" aria-hidden="true"></span>-->
+<!--      <strong>{{ activeSession()!.name }}</strong> is the current active session-->
+<!--      &nbsp;·&nbsp; {{ activeSession()!.terms.length }} term(s) configured-->
+<!--    </div>-->
+<!--  }-->
+
+<!--  &lt;!&ndash; Loading skeleton &ndash;&gt;-->
+<!--  @if (isLoading()) {-->
+<!--    <div class="session-grid">-->
+<!--      @for (i of [1, 2, 3]; track i) {-->
+<!--        <div class="skeleton-card"></div>-->
+<!--      }-->
+<!--    </div>-->
+<!--  }-->
+
+<!--  @else if (sessions().length === 0) {-->
+<!--    <div class="empty-state">-->
+<!--      <svg width="44" height="44" viewBox="0 0 24 24" fill="none"-->
+<!--           stroke="currentColor" stroke-width="1.5" aria-hidden="true">-->
+<!--        <rect x="3" y="4" width="18" height="18" rx="2"/>-->
+<!--        <line x1="16" y1="2" x2="16" y2="6"/>-->
+<!--        <line x1="8" y1="2" x2="8" y2="6"/>-->
+<!--        <line x1="3" y1="10" x2="21" y2="10"/>-->
+<!--      </svg>-->
+<!--      <p class="empty-state__text">No academic sessions yet</p>-->
+<!--      <p class="empty-state__sub">Create your first session to get started</p>-->
+<!--      <button class="btn-primary" (click)="panelOpen.set(true)">-->
+<!--        Create first session-->
+<!--      </button>-->
+<!--    </div>-->
+<!--  }-->
+
+<!--  @else {-->
+<!--    <div class="session-grid">-->
+<!--      @for (session of sessions(); track session.id) {-->
+<!--        <div class="session-card" [class.session-card&#45;&#45;active]="session.status === 'ACTIVE'">-->
+
+<!--          <div class="session-card__header">-->
+<!--            <div>-->
+<!--              <h2 class="session-card__name">{{ session.name }}</h2>-->
+<!--              <p class="session-card__dates">-->
+<!--                {{ formatDate(session.startDate) }} — {{ formatDate(session.endDate) }}-->
+<!--              </p>-->
+<!--            </div>-->
+<!--            <span class="badge"-->
+<!--                  [class.badge&#45;&#45;active]="session.status === 'ACTIVE'"-->
+<!--                  [class.badge&#45;&#45;inactive]="session.status !== 'ACTIVE'">-->
+<!--              {{ session.status | lowercase }}-->
+<!--            </span>-->
+<!--          </div>-->
+
+<!--          <div class="session-card__terms">-->
+<!--            @if (session.terms.length === 0) {-->
+<!--              <p class="session-card__no-terms">No terms configured yet</p>-->
+<!--            } @else {-->
+<!--              @for (term of session.terms; track term.id) {-->
+<!--                <div class="term-row">-->
+<!--                  <span class="term-row__name">{{ term.name | titlecase }} term</span>-->
+<!--                  <span class="term-row__dates">-->
+<!--                    {{ formatDate(term.startDate) }} — {{ formatDate(term.endDate) }}-->
+<!--                  </span>-->
+<!--                  @if (term.isCurrent) {-->
+<!--                    <span class="term-row__current">current</span>-->
+<!--                  }-->
+<!--                </div>-->
+<!--              }-->
+<!--            }-->
+<!--          </div>-->
+
+<!--          <div class="session-card__actions">-->
+<!--            <button class="btn-ghost" (click)="openTermPanel(session)">-->
+<!--              + Add term-->
+<!--            </button>-->
+<!--            @if (session.status !== 'ACTIVE') {-->
+<!--              <button class="btn-ghost btn-ghost&#45;&#45;primary"-->
+<!--                      (click)="activateSession(session)">-->
+<!--                Set as active-->
+<!--              </button>-->
+<!--            }-->
+<!--          </div>-->
+
+<!--        </div>-->
+<!--      }-->
+<!--    </div>-->
+<!--  }-->
+
+<!--  &lt;!&ndash; ── Create session panel ────────────────────────────────────────────── &ndash;&gt;-->
+<!--  @if (panelOpen()) {-->
+<!--    <div class="panel-backdrop" (click)="closePanel()" aria-hidden="true"></div>-->
+<!--    <aside class="panel" role="dialog" aria-modal="true"-->
+<!--           aria-label="Create academic session">-->
+
+<!--      <div class="panel__header">-->
+<!--        <h2 class="panel__title">New academic session</h2>-->
+<!--        <button class="panel__close" (click)="closePanel()" aria-label="Close panel">-->
+<!--          <svg width="17" height="17" viewBox="0 0 24 24" fill="none"-->
+<!--               stroke="currentColor" stroke-width="2.5" aria-hidden="true">-->
+<!--            <line x1="18" y1="6" x2="6" y2="18"/>-->
+<!--            <line x1="6" y1="6" x2="18" y2="18"/>-->
+<!--          </svg>-->
+<!--        </button>-->
+<!--      </div>-->
+<!--      <p class="panel__subtitle">Define the school year name and its date range</p>-->
+
+<!--      @if (errorMessage()) {-->
+<!--        <div class="alert alert&#45;&#45;error" role="alert">{{ errorMessage() }}</div>-->
+<!--      }-->
+
+<!--      <form [formGroup]="sessionForm" (ngSubmit)="submitSession()" novalidate>-->
+
+<!--        <div class="field">-->
+<!--          <label for="sname" class="field__label">Session name</label>-->
+<!--          <input-->
+<!--            id="sname"-->
+<!--            type="text"-->
+<!--            formControlName="name"-->
+<!--            class="field__input"-->
+<!--            placeholder="e.g. 2024/2025"-->
+<!--          />-->
+<!--          @if (sessionForm.controls.name.invalid && sessionForm.controls.name.touched) {-->
+<!--            <span class="field__error">Session name is required</span>-->
+<!--          }-->
+<!--        </div>-->
+
+<!--        <div class="field">-->
+<!--          <label for="sstart" class="field__label">Start date</label>-->
+<!--          <input-->
+<!--            id="sstart"-->
+<!--            type="date"-->
+<!--            formControlName="startDate"-->
+<!--            class="field__input"-->
+<!--          />-->
+<!--          @if (sessionForm.controls.startDate.invalid && sessionForm.controls.startDate.touched) {-->
+<!--            <span class="field__error">Start date is required</span>-->
+<!--          }-->
+<!--        </div>-->
+
+<!--        <div class="field">-->
+<!--          <label for="send" class="field__label">End date</label>-->
+<!--          <input-->
+<!--            id="send"-->
+<!--            type="date"-->
+<!--            formControlName="endDate"-->
+<!--            class="field__input"-->
+<!--          />-->
+<!--          @if (sessionForm.controls.endDate.invalid && sessionForm.controls.endDate.touched) {-->
+<!--            <span class="field__error">End date is required</span>-->
+<!--          }-->
+<!--        </div>-->
+
+<!--        <button-->
+<!--          type="submit"-->
+<!--          class="btn-primary btn&#45;&#45;full"-->
+<!--          [disabled]="isSubmitting()"-->
+<!--        >-->
+<!--          @if (isSubmitting()) {-->
+<!--            <span class="spinner" aria-hidden="true"></span>-->
+<!--            Creating...-->
+<!--          } @else {-->
+<!--            Create session-->
+<!--          }-->
+<!--        </button>-->
+
+<!--      </form>-->
+<!--    </aside>-->
+<!--  }-->
+
+<!--  &lt;!&ndash; ── Add term panel ─────────────────────────────────────────────────── &ndash;&gt;-->
+<!--  @if (termPanelFor()) {-->
+<!--    <div class="panel-backdrop" (click)="closePanel()" aria-hidden="true"></div>-->
+<!--    <aside class="panel" role="dialog" aria-modal="true" aria-label="Add term">-->
+
+<!--      <div class="panel__header">-->
+<!--        <h2 class="panel__title">Add term</h2>-->
+<!--        <button class="panel__close" (click)="closePanel()" aria-label="Close panel">-->
+<!--          <svg width="17" height="17" viewBox="0 0 24 24" fill="none"-->
+<!--               stroke="currentColor" stroke-width="2.5" aria-hidden="true">-->
+<!--            <line x1="18" y1="6" x2="6" y2="18"/>-->
+<!--            <line x1="6" y1="6" x2="18" y2="18"/>-->
+<!--          </svg>-->
+<!--        </button>-->
+<!--      </div>-->
+<!--      <p class="panel__subtitle">-->
+<!--        Adding term to <strong>{{ termPanelFor()!.name }}</strong>-->
+<!--      </p>-->
+
+<!--      @if (errorMessage()) {-->
+<!--        <div class="alert alert&#45;&#45;error" role="alert">{{ errorMessage() }}</div>-->
+<!--      }-->
+
+<!--      <form [formGroup]="termForm" (ngSubmit)="submitTerm()" novalidate>-->
+
+<!--        <div class="field">-->
+<!--          <label for="tname" class="field__label">Term</label>-->
+<!--          <select id="tname" formControlName="name" class="field__input">-->
+<!--            @for (t of termNames; track t) {-->
+<!--              <option [value]="t">{{ t | titlecase }} term</option>-->
+<!--            }-->
+<!--          </select>-->
+<!--        </div>-->
+
+<!--        <div class="field">-->
+<!--          <label for="tstart" class="field__label">Start date</label>-->
+<!--          <input-->
+<!--            id="tstart"-->
+<!--            type="date"-->
+<!--            formControlName="startDate"-->
+<!--            class="field__input"-->
+<!--          />-->
+<!--          @if (termForm.controls.startDate.invalid && termForm.controls.startDate.touched) {-->
+<!--            <span class="field__error">Start date is required</span>-->
+<!--          }-->
+<!--        </div>-->
+
+<!--        <div class="field">-->
+<!--          <label for="tend" class="field__label">End date</label>-->
+<!--          <input-->
+<!--            id="tend"-->
+<!--            type="date"-->
+<!--            formControlName="endDate"-->
+<!--            class="field__input"-->
+<!--          />-->
+<!--          @if (termForm.controls.endDate.invalid && termForm.controls.endDate.touched) {-->
+<!--            <span class="field__error">End date is required</span>-->
+<!--          }-->
+<!--        </div>-->
+
+<!--        <button-->
+<!--          type="submit"-->
+<!--          class="btn-primary btn&#45;&#45;full"-->
+<!--          [disabled]="isSubmitting()"-->
+<!--        >-->
+<!--          @if (isSubmitting()) {-->
+<!--            <span class="spinner" aria-hidden="true"></span>-->
+<!--            Adding...-->
+<!--          } @else {-->
+<!--            Add term-->
+<!--          }-->
+<!--        </button>-->
+
+<!--      </form>-->
+<!--    </aside>-->
+<!--  }-->
+
+<!--</div>-->

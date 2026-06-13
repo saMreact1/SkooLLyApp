@@ -1,0 +1,48 @@
+<div class="auth-wrapper">
+
+  <!-- Left decorative panel -->
+  <div class="auth-panel">
+    <div class="auth-panel__brand">
+      <div class="auth-panel__icon">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+             stroke="currentColor" stroke-width="2" stroke-linecap="round"
+             stroke-linejoin="round" aria-hidden="true">
+          <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+          <polyline points="9,22 9,12 15,12 15,22"/>
+        </svg>
+      </div>
+      <span class="auth-panel__name">skooLLy</span>
+    </div>
+
+    <div class="auth-panel__body">
+      <h1 class="auth-panel__headline">
+        School management,<br>simplified
+      </h1>
+      <p class="auth-panel__sub">
+        One platform for students, teachers,<br>
+        parents and administrators.
+      </p>
+    </div>
+
+    <div class="auth-panel__features">
+      <div class="auth-panel__feature">
+        <span class="auth-panel__feature-dot"></span>
+        Role-based dashboards
+      </div>
+      <div class="auth-panel__feature">
+        <span class="auth-panel__feature-dot"></span>
+        Attendance & results tracking
+      </div>
+      <div class="auth-panel__feature">
+        <span class="auth-panel__feature-dot"></span>
+        Fees & communication
+      </div>
+    </div>
+  </div>
+
+  <!-- Right form panel — router outlet renders each auth page here -->
+  <div class="auth-form-panel">
+    <router-outlet />
+  </div>
+
+</div>

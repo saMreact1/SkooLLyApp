@@ -1,0 +1,276 @@
+<!-- timetable.component.html -->
+<div class="page timetable-page">
+
+  <div class="page__header">
+    <div>
+      <h1 class="page__title">Timetable</h1>
+      <p class="page__sub">
+        @if (selectedClassroom()) {
+          {{ selectedClassroom()!.name }} {{ selectedClassroom()!.section }}
+          · {{ selectedTerm()?.name }}
+          · {{ slots().length }} slot(s)
+        } @else {
+          Select a session, term and classroom
+        }
+      </p>
+    </div>
+  </div>
+
+  <!-- Step 1: Session selector -->
+  @if (isLoadingSessions()) {
+    <div class="selector-skeleton"></div>
+  } @else {
+    <div class="selector-group">
+      <span class="selector-label">Session</span>
+      <div class="selector-tabs" role="tablist" aria-label="Select session">
+        @for (session of sessions(); track session.id) {
+          <button class="selector-tab" role="tab"
+                  [class.selector-tab--active]="session.id === selectedSessionId()"
+                  (click)="selectSession(session.id)">
+            {{ session.name }}
+            @if (session.isCurrent) {
+              <span class="selector-tab__dot" aria-label="Current"></span>
+            }
+          </button>
+        }
+      </div>
+    </div>
+  }
+
+  <!-- Step 2: Term selector (appears after session is chosen) -->
+  @if (selectedSessionId() && terms().length > 0) {
+    <div class="selector-group">
+      <span class="selector-label">Term</span>
+      <div class="selector-tabs" role="tablist" aria-label="Select term">
+        @for (term of terms(); track term.id) {
+          <button class="selector-tab" role="tab"
+                  [class.selector-tab--active]="term.id === selectedTermId()"
+                  (click)="selectTerm(term.id)">
+            {{ term.name }}
+            @if (term.isCurrent) {
+              <span class="selector-tab__dot" aria-label="Current term"></span>
+            }
+          </button>
+        }
+      </div>
+    </div>
+  }
+
+  <!-- Step 3: Classroom selector (appears after term is chosen) -->
+  @if (selectedTermId() && classrooms().length > 0) {
+    <div class="selector-group">
+      <span class="selector-label">Classroom</span>
+      <div class="selector-tabs" role="tablist" aria-label="Select classroom">
+        @for (room of classrooms(); track room.id) {
+          <button class="selector-tab selector-tab--sm" role="tab"
+                  [class.selector-tab--active]="room.id === selectedClassroomId()"
+                  (click)="selectClassroom(room.id)">
+            {{ room.name }} {{ room.section }}
+          </button>
+        }
+      </div>
+    </div>
+  }
+
+  <!-- Grid -->
+  @if (isLoadingSlots()) {
+    <div class="grid-skeleton">
+      @for (i of [1,2,3,4,5,6]; track i) {
+        <div class="grid-skeleton__row"></div>
+      }
+    </div>
+  }
+
+  @else if (!selectedClassroomId()) {
+    <div class="empty-state">
+      <svg width="40" height="40" viewBox="0 0 24 24" fill="none"
+           stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+        <rect x="3" y="4" width="18" height="18" rx="2"/>
+        <line x1="16" y1="2" x2="16" y2="6"/>
+        <line x1="8" y1="2" x2="8" y2="6"/>
+        <line x1="3" y1="10" x2="21" y2="10"/>
+      </svg>
+      <p class="empty-state__text">Select a session, term and classroom above</p>
+    </div>
+  }
+
+  @else {
+    <div class="timetable-wrap">
+      <div class="timetable-grid" role="grid"
+           [attr.aria-label]="'Timetable for ' + selectedClassroom()?.name">
+
+        <!-- Header row -->
+        <div class="timetable-grid__header" role="row">
+          <div class="timetable-grid__corner" role="columnheader">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
+                 stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <circle cx="12" cy="12" r="10"/>
+              <polyline points="12,6 12,12 16,14"/>
+            </svg>
+          </div>
+          @for (day of days; track day) {
+            <div class="timetable-grid__day-header" role="columnheader">
+              {{ formatDay(day) }}
+            </div>
+          }
+        </div>
+
+        <!-- Data rows -->
+        @for (time of timeSlots; track time) {
+          <div class="timetable-grid__row" role="row">
+            <div class="timetable-grid__time" role="rowheader">{{ time }}</div>
+            @for (day of days; track day) {
+              @let slot = getSlot(day, time);
+              <div class="timetable-cell"
+                   role="gridcell"
+                   [class.timetable-cell--empty]="!slot"
+                   (click)="!slot && openAddSlot(day, time)"
+                   [attr.aria-label]="slot ? slot.subjectName + ' ' + day + ' ' + time
+                                           : 'Add slot ' + day + ' ' + time"
+                   [attr.tabindex]="slot ? -1 : 0"
+                   (keydown.enter)="!slot && openAddSlot(day, time)">
+                @if (slot) {
+                  <div class="slot-pill" [class]="slotColor(slot.subjectId)">
+                    <span class="slot-pill__subject">{{ slot.subjectName }}</span>
+                    <span class="slot-pill__teacher">{{ slot.teacherName }}</span>
+                    <button class="slot-pill__remove"
+                            (click)="deleteSlot(slot, $event)"
+                            [attr.aria-label]="'Remove ' + slot.subjectName">
+                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none"
+                           stroke="currentColor" stroke-width="2.5" aria-hidden="true">
+                        <line x1="18" y1="6" x2="6" y2="18"/>
+                        <line x1="6" y1="6" x2="18" y2="18"/>
+                      </svg>
+                    </button>
+                  </div>
+                } @else {
+                  <span class="timetable-cell__add" aria-hidden="true">+</span>
+                }
+              </div>
+            }
+          </div>
+        }
+
+      </div>
+    </div>
+
+    @if (slots().length > 0) {
+      <div class="timetable-legend">
+        <span class="timetable-legend__label">Subjects:</span>
+        @for (subject of subjects(); track subject.id) {
+          @if (slots().some(s => s.subjectId === subject.id)) {
+            <span class="legend-pill" [class]="slotColor(subject.id)">
+              {{ subject.name }}
+            </span>
+          }
+        }
+      </div>
+    }
+  }
+
+  <!-- Add slot panel -->
+  @if (panelOpen()) {
+    <div class="panel-backdrop" (click)="closePanel()" aria-hidden="true"></div>
+    <aside class="panel" role="dialog" aria-modal="true"
+           aria-label="Add timetable slot">
+      <div class="panel__header">
+        <h2 class="panel__title">Add timetable slot</h2>
+        <button class="panel__close" (click)="closePanel()" aria-label="Close">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none"
+               stroke="currentColor" stroke-width="2.5" aria-hidden="true">
+            <line x1="18" y1="6" x2="6" y2="18"/>
+            <line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+      </div>
+
+      @if (prefillDay() && prefillTime()) {
+        <p class="panel__context">
+          <strong>{{ formatDay(prefillDay()!) }}</strong>
+          at <strong>{{ prefillTime() }}</strong>
+          · {{ selectedClassroom()?.name }} {{ selectedClassroom()?.section }}
+          · {{ selectedTerm()?.name }}
+        </p>
+      }
+
+      @if (errorMessage()) {
+        <div class="alert alert--error">{{ errorMessage() }}</div>
+      }
+
+      <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
+
+        <div class="field">
+          <label class="field__label">Day</label>
+          <select formControlName="dayOfWeek" class="field__input">
+            <option value="" disabled>Select day</option>
+            @for (day of days; track day) {
+              <option [value]="day">{{ formatDay(day) }}</option>
+            }
+          </select>
+          @if (form.controls.dayOfWeek.invalid && form.controls.dayOfWeek.touched) {
+            <span class="field__error">Required</span>
+          }
+        </div>
+
+        <div class="field-row">
+          <div class="field">
+            <label class="field__label">Start time</label>
+            <select formControlName="startTime" class="field__input">
+              <option value="" disabled>Start</option>
+              @for (t of timeSlots; track t) {
+                <option [value]="t">{{ t }}</option>
+              }
+            </select>
+          </div>
+          <div class="field">
+            <label class="field__label">End time</label>
+            <select formControlName="endTime" class="field__input">
+              <option value="" disabled>End</option>
+              @for (t of timeSlots; track t) {
+                <option [value]="t">{{ t }}</option>
+              }
+            </select>
+          </div>
+        </div>
+
+        <div class="field">
+          <label class="field__label">Subject</label>
+          <select formControlName="subjectId" class="field__input">
+            <option [ngValue]="null" disabled>Select subject</option>
+            @for (subject of subjects(); track subject.id) {
+              <option [ngValue]="subject.id">{{ subject.name }}</option>
+            }
+          </select>
+          @if (form.controls.subjectId.invalid && form.controls.subjectId.touched) {
+            <span class="field__error">Required</span>
+          }
+        </div>
+
+        <div class="field">
+          <label class="field__label">Teacher</label>
+          <select formControlName="teacherId" class="field__input">
+            <option [ngValue]="null" disabled>Select teacher</option>
+            @for (teacher of teachers(); track teacher.id) {
+              <option [ngValue]="teacher.id">
+                {{ teacher.firstName }} {{ teacher.lastName }}
+              </option>
+            }
+          </select>
+          @if (form.controls.teacherId.invalid && form.controls.teacherId.touched) {
+            <span class="field__error">Required</span>
+          }
+        </div>
+
+        <button type="submit" class="btn-primary btn--full"
+                [disabled]="isSubmitting()">
+          @if (isSubmitting()) {
+            <span class="spinner" aria-hidden="true"></span> Adding...
+          } @else {
+            Add to timetable
+          }
+        </button>
+
+      </form>
+    </aside>
+  }
+</div>

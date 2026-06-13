@@ -1,0 +1,219 @@
+<div class="messaging-layout">
+  <!-- Left panel: Conversations -->
+  <aside class="conversations-panel">
+    <div class="panel-header">
+      <h2 class="panel-title">Messages</h2>
+      <button class="btn btn--icon btn--primary-circle" (click)="openNewChat()" title="New message">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="12" y1="5" x2="12" y2="19"></line>
+          <line x1="5" y1="12" x2="19" y2="12"></line>
+        </svg>
+      </button>
+    </div>
+
+    @if (errorMessage()) {
+      <div class="alert alert--error">{{ errorMessage() }}</div>
+    }
+
+    @if (isLoading()) {
+      <div class="loading-state">
+        <div class="spinner"></div>
+        <p>Loading conversations...</p>
+      </div>
+    } @else if (sortedConversations().length === 0) {
+      <div class="empty-state">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"></path>
+        </svg>
+        <p>No conversations yet</p>
+        <button class="btn btn--primary btn--sm" (click)="openNewChat()">Start a chat</button>
+      </div>
+    } @else {
+      <div class="conversation-list">
+        @for (conv of sortedConversations(); track conv.id) {
+          <button
+            class="conversation-item"
+            [class.active]="conv.id === activeConversationId()"
+            (click)="selectConversation(conv)"
+          >
+            <div class="conv-avatar" [class.group-avatar]="conv.type === 'GROUP'">
+              {{ conversationAvatar(conv) }}
+            </div>
+            <div class="conv-info">
+              <div class="conv-top">
+                <span class="conv-name">{{ conversationTitle(conv) }}</span>
+                @if (conv.lastMessage) {
+                  <span class="conv-time">{{ formatTime(conv.lastMessage.createdAt) }}</span>
+                }
+              </div>
+              <div class="conv-bottom">
+                <span class="conv-preview">{{ lastMessagePreview(conv) }}</span>
+                @if (conv.unreadCount > 0) {
+                  <span class="badge badge--unread">{{ conv.unreadCount }}</span>
+                }
+              </div>
+            </div>
+          </button>
+        }
+      </div>
+    }
+  </aside>
+
+  <!-- Right panel: Chat area -->
+  <main class="chat-panel">
+    @if (!activeConversation()) {
+      <div class="chat-empty">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
+        </svg>
+        <h3>Your Messages</h3>
+        <p>Select a conversation or start a new one</p>
+      </div>
+    } @else {
+      <!-- Chat header -->
+      <div class="chat-header">
+        <div class="chat-header-info">
+          <div class="conv-avatar" [class.group-avatar]="activeConversation()!.type === 'GROUP'">
+            {{ conversationAvatar(activeConversation()!) }}
+          </div>
+          <div>
+            <h3 class="chat-header-name">{{ conversationTitle(activeConversation()!) }}</h3>
+            @if (conversationPartner(); as partner) {
+              <span class="chat-header-role">{{ partner.role }}</span>
+            } @else if (activeConversation()!.type === 'GROUP') {
+              <span class="chat-header-role">{{ activeConversation()!.participants.length }} participants</span>
+            }
+          </div>
+        </div>
+      </div>
+
+      <!-- Messages -->
+      <div class="messages-area">
+        @if (loadingMessages()) {
+          <div class="loading-state">
+            <div class="spinner"></div>
+          </div>
+        } @else if (activeMessages().length === 0) {
+          <div class="chat-empty chat-empty--small">
+            <p>No messages yet. Send a message to start the conversation.</p>
+          </div>
+        } @else {
+          @for (msg of activeMessages(); track msg.id) {
+            <div
+              class="message"
+              [class.message--sent]="isOwnMessage(msg)"
+              [class.message--received]="!isOwnMessage(msg)"
+              [class.message--deleted]="msg.deleted"
+            >
+              @if (!isOwnMessage(msg)) {
+                <div class="message-avatar">
+                  {{ msg.senderName.charAt(0) }}
+                </div>
+              }
+              <div class="message-bubble">
+                @if (!isOwnMessage(msg)) {
+                  <span class="message-sender">{{ msg.senderName }}</span>
+                }
+                <p class="message-text">{{ msg.content }}</p>
+                <div class="message-meta">
+                  @if (msg.edited) {
+                    <span class="message-edited">edited</span>
+                  }
+                  <span class="message-time">{{ formatTime(msg.createdAt) }}</span>
+                </div>
+              </div>
+            </div>
+          }
+        }
+      </div>
+
+      <!-- Message input -->
+      <div class="message-input-area">
+        <form [formGroup]="messageForm" (ngSubmit)="sendMessage()" class="message-form">
+          <input
+            type="text"
+            formControlName="content"
+            class="message-input"
+            placeholder="Type a message..."
+            autocomplete="off"
+          />
+          <button
+            type="submit"
+            class="btn btn--send"
+            [disabled]="messageForm.invalid || isSending()"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="22" y1="2" x2="11" y2="13"></line>
+              <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+            </svg>
+          </button>
+        </form>
+      </div>
+    }
+  </main>
+</div>
+
+<!-- New chat panel -->
+@if (showNewChatPanel()) {
+  <div class="panel-backdrop" (click)="closeNewChat()" aria-hidden="true"></div>
+  <aside class="new-chat-panel" role="dialog" aria-modal="true" aria-label="New conversation">
+    <div class="panel-header">
+      <h2 class="panel-title">New Message</h2>
+      <button class="panel-close" (click)="closeNewChat()" aria-label="Close">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
+    </div>
+
+    <div class="new-chat-search">
+      <input
+        type="text"
+        placeholder="Search users by name..."
+        class="search-input"
+        [ngModel]="userSearchQuery()"
+        (ngModelChange)="onSearchInput($event)"
+        autofocus
+      />
+      @if (loadingUsers()) {
+        <div class="search-spinner">
+          <div class="spinner spinner--xs"></div>
+        </div>
+      }
+    </div>
+
+    <div class="new-chat-users">
+      @if (loadingUsers()) {
+        <div class="loading-state">
+          <div class="spinner"></div>
+          <p>Searching...</p>
+        </div>
+      } @else if (filteredResults().length > 0) {
+        @for (user of filteredResults(); track user.id) {
+          <button
+            class="user-result-item"
+            (click)="startDirectConversation(user.id)"
+            [disabled]="creatingConv() === user.id"
+          >
+            <div class="user-result-avatar">
+              {{ user.firstName.charAt(0) }}{{ user.lastName.charAt(0) }}
+            </div>
+            <div class="user-result-info">
+              <span class="user-result-name">{{ user.firstName }} {{ user.lastName }}</span>
+              <span class="user-result-email">{{ user.email }}</span>
+            </div>
+            <span class="user-result-role">{{ user.role }}</span>
+            @if (creatingConv() === user.id) {
+              <div class="spinner spinner--xs"></div>
+            }
+          </button>
+        }
+      } @else if (userSearchQuery().trim().length >= 2) {
+        <p class="search-hint">No users found matching "{{ userSearchQuery() }}"</p>
+      } @else {
+        <p class="search-hint">Type at least 2 characters to search for users.</p>
+      }
+    </div>
+  </aside>
+}

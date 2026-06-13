@@ -1,0 +1,20 @@
+@if (state().visible) {
+  <div class="modal-overlay" (click)="onCancel()">
+    <div class="modal-container" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3 class="modal-title">{{ state().title }}</h3>
+      </div>
+      <div class="modal-body">
+        <p class="modal-message">{{ state().message }}</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn--secondary" (click)="onCancel()">
+          Cancel
+        </button>
+        <button type="button" class="btn btn--danger" (click)="onConfirm()">
+          {{ state().confirmText || 'Delete' }}
+        </button>
+      </div>
+    </div>
+  </div>
+}

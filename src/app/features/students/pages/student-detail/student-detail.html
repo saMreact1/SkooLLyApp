@@ -1,0 +1,200 @@
+<!-- student-detail.component.html -->
+<div class="page">
+
+  <!-- Back -->
+  <a routerLink="/app/students" class="back-link">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none"
+         stroke="currentColor" stroke-width="2.5" aria-hidden="true">
+      <polyline points="15 18 9 12 15 6"/>
+    </svg>
+    Back to students
+  </a>
+
+  @if (isLoading()) {
+    <div class="profile-skeleton"></div>
+  }
+
+  @else if (student()) {
+    @let s = student()!;
+
+    <!-- Profile header card -->
+    <div class="profile-header">
+      <div class="profile-header__avatar" aria-hidden="true">
+        {{ initials(s) }}
+      </div>
+      <div class="profile-header__info">
+        <h1 class="profile-header__name">{{ s.firstName }} {{ s.lastName }}</h1>
+        <p class="profile-header__meta">
+          <code class="code-pill">{{ s.admissionNumber }}</code>
+          &nbsp;·&nbsp;
+          {{ s.currentClass }} {{ s.currentSection }}
+          &nbsp;·&nbsp;
+          {{ s.schoolName }}
+        </p>
+      </div>
+      <div class="profile-header__actions">
+        <span class="badge" [class]="statusClass(s.status)">
+          {{ s.status | titlecase }}
+        </span>
+        @if (isAdmin()) {
+          <button class="btn-ghost" (click)="openEdit()">Edit profile</button>
+        }
+      </div>
+    </div>
+
+    <!-- Detail grid -->
+    <div class="detail-grid">
+
+      <!-- Personal information -->
+      <div class="detail-card">
+        <h2 class="detail-card__title">Personal information</h2>
+        <div class="detail-rows">
+          <div class="detail-row">
+            <span class="detail-row__label">Email</span>
+            <span class="detail-row__value">{{ s.email }}</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-row__label">Date of birth</span>
+            <span class="detail-row__value">{{ formatDate(s.admissionDate) }}</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-row__label">Blood group</span>
+            <span class="detail-row__value">{{ s.bloodGroup ?? '—' }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Academic information -->
+      <div class="detail-card">
+        <h2 class="detail-card__title">Academic information</h2>
+        <div class="detail-rows">
+          <div class="detail-row">
+            <span class="detail-row__label">Current class</span>
+            <span class="detail-row__value">{{ s.currentClass }}</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-row__label">Section</span>
+            <span class="detail-row__value">{{ s.currentSection }}</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-row__label">Admission date</span>
+            <span class="detail-row__value">{{ formatDate(s.admissionDate) }}</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-row__label">Status</span>
+            <span class="badge badge--sm" [class]="statusClass(s.status)">
+              {{ s.status | titlecase }}
+            </span>
+          </div>
+        </div>
+
+        <!-- Status change (admin only) -->
+        @if (isAdmin()) {
+          <div class="status-change">
+            <p class="status-change__label">Change status</p>
+            <div class="status-change__options">
+              @for (opt of statusOptions; track opt.value) {
+                <button
+                  class="status-option"
+                  [class.status-option--active]="s.status === opt.value"
+                  (click)="changeStatus(opt.value)"
+                >{{ opt.label }}</button>
+              }
+            </div>
+          </div>
+        }
+      </div>
+
+      <!-- Emergency contact -->
+      <div class="detail-card">
+        <h2 class="detail-card__title">Emergency contact</h2>
+        <div class="detail-rows">
+          <div class="detail-row">
+            <span class="detail-row__label">Name</span>
+            <span class="detail-row__value">{{ s.emergencyContactName ?? '—' }}</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-row__label">Phone</span>
+            <span class="detail-row__value">{{ s.emergencyContactPhone ?? '—' }}</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-row__label">Relationship</span>
+            <span class="detail-row__value">{{ s.emergencyContactRelationship ?? '—' }}</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  }
+
+  <!-- Edit panel -->
+  @if (editOpen()) {
+    <div class="panel-backdrop" (click)="editOpen.set(false)" aria-hidden="true"></div>
+    <aside class="panel" role="dialog" aria-modal="true" aria-label="Edit student profile">
+      <div class="panel__header">
+        <div>
+          <h2 class="panel__title">Edit profile</h2>
+          <p class="panel__subtitle">Update academic and contact details</p>
+        </div>
+        <button class="panel__close" (click)="editOpen.set(false)" aria-label="Close">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none"
+               stroke="currentColor" stroke-width="2.5" aria-hidden="true">
+            <line x1="18" y1="6" x2="6" y2="18"/>
+            <line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+      </div>
+
+      @if (errorMessage()) {
+        <div class="alert alert--error">{{ errorMessage() }}</div>
+      }
+
+      <form [formGroup]="form" (ngSubmit)="submitEdit()" novalidate>
+
+        <p class="form-section">Academic</p>
+        <div class="field-row">
+          <div class="field">
+            <label class="field__label">Class</label>
+            <input type="text" formControlName="currentClass" class="field__input"/>
+          </div>
+          <div class="field">
+            <label class="field__label">Section</label>
+            <input type="text" formControlName="currentSection" class="field__input"/>
+          </div>
+        </div>
+        <div class="field">
+          <label class="field__label">Blood group</label>
+          <input type="text" formControlName="bloodGroup" class="field__input" placeholder="e.g. O+"/>
+        </div>
+        <div class="field">
+          <label class="field__label">Medical conditions</label>
+          <input type="text" formControlName="medicalConditions" class="field__input" placeholder="e.g. Asthma, None"/>
+        </div>
+
+        <p class="form-section">Emergency contact</p>
+        <div class="field">
+          <label class="field__label">Contact name</label>
+          <input type="text" formControlName="emergencyContactName" class="field__input"/>
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label class="field__label">Phone</label>
+            <input type="tel" formControlName="emergencyContactPhone" class="field__input"/>
+          </div>
+          <div class="field">
+            <label class="field__label">Relationship</label>
+            <input type="text" formControlName="emergencyContactRelationship" class="field__input"/>
+          </div>
+        </div>
+
+        <button type="submit" class="btn-primary btn--full" [disabled]="isSubmitting()">
+          @if (isSubmitting()) {
+            <span class="spinner" aria-hidden="true"></span> Saving...
+          } @else {
+            Save changes
+          }
+        </button>
+      </form>
+    </aside>
+  }
+</div>

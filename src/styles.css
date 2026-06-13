@@ -1,1 +1,536 @@
-/* You can add global styles to this file, and also import other style files */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  --bg-base: #f5f5f3;
+  --bg-surface: #ffffff;
+  --bg-surface-hover: #f5f5f3;
+  --bg-muted: #f0f0ee;
+  --border: #e8e8e6;
+  --text: #333333;
+  --text-primary: #111111;
+  --text-secondary: #555555;
+  --text-muted: #888888;
+  --text-subtle: #666666;
+  --primary: #633806;
+  --primary-200: #faeeda;
+  --primary-500: #3c3489;
+  --gray-500: #bbbbbb;
+  --dark-blue: #042c53;
+  --deep-brown: #4A1B0C;
+  --deep-green: #173404;
+  --amber: #EF9F27;
+  --box-shadow: #1D9E7514;
+  --alert: #791F1F;
+  --accent: #1D9E75;
+  --accent-primary: #9FE1CB;
+  --accent-strong: #0F6E56;
+  --accent-soft: #E1F5EE;
+  --avatar-bg: #E1F5EE;
+  --avatar-text: #0F6E56;
+  --danger: #E24B4A;
+  --theme-toggle-track: #ececea;
+  --theme-toggle-track-hover: #e2e2df;
+  --theme-toggle-border: #d8d8d5;
+  --theme-toggle-thumb: #ffffff;
+  --theme-toggle-icon: #888888;
+  color-scheme: light;
+}
+
+[data-theme='dark'] {
+  --bg-base: #111110;
+  --bg-surface: #1a1a19;
+  --bg-surface-hover: #252524;
+  --bg-muted: #2a2a28;
+  --border: #2e2e2c;
+  --text: #ffffff;
+  --text-primary: #f0f0ee;
+  --text-secondary: #b0b0ad;
+  --text-muted: #888884;
+  --text-subtle: #9a9a96;
+  --primary: #c28a3a;
+  --primary-200: #d9b87f;
+  --primary-500: #5b54ac;
+  --gray-500: #bbbbbb;
+  --dark-blue: #4a90d9;
+  --deep-brown: #c4745c;
+  --deep-green: #9FE1CB;
+  --amber: #FFB93C;
+  --box-shadow: #1D9E753D;
+  --alert: #A63A3A;
+  --accent: #2eb88a;
+  --accent-primary: #9FE1CB;
+  --accent-strong: #1D9E75;
+  --accent-soft: #0d2e24;
+  --avatar-bg: #0d2e24;
+  --avatar-text: #2eb88a;
+  --theme-toggle-track: #2a2a28;
+  --theme-toggle-track-hover: #333331;
+  --theme-toggle-border: #3a3a38;
+  --theme-toggle-thumb: #f0f0ee;
+  --theme-toggle-icon: #b0b0ad;
+  color-scheme: dark;
+}
+
+html, body {
+  height: 100%;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+body {
+  background: var(--bg-base);
+  color: var(--text-primary);
+  transition: background 0.3s ease, color 0.3s ease;
+}
+
+/* Auth tab switcher */
+.auth-tabs {
+  display: flex;
+  border: 1px solid #e0e0e0;
+  border-radius: 10px;
+  padding: 4px;
+  margin-bottom: 2rem;
+  background: #f7f7f7;
+  width: 100%;        /* ← ensures it always fills its container */
+}
+
+.auth-tab {
+  flex: 1;
+  padding: 9px 12px;
+  text-align: center;
+  font-size: 14px;
+  font-weight: 500;
+  border-radius: 7px;
+  cursor: pointer;
+  color: #777;
+  text-decoration: none;
+  transition: all 0.15s;
+  display: block;
+  white-space: nowrap;  /* ← prevents "Create account" wrapping to 2 lines */
+}
+
+.auth-tab:hover:not(.auth-tab--active) {
+  color: #333;
+  background: #efefef;
+}
+
+.auth-tab--active {
+  background: #ffffff;
+  color: #111;
+  font-weight: 600;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  cursor: default;
+  pointer-events: none;
+}
+
+/* Shared field styles (used by all auth step components) */
+.field {
+  margin-bottom: 1.1rem;
+}
+
+.field__label {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  color: #888;
+  margin-bottom: 5px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.field__label-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 5px;
+}
+
+.field__link {
+  font-size: 12px;
+  color: #1D9E75;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.field__input {
+  width: 100%;
+  padding: 10px 14px;
+  font-size: 14px;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  background: #fff;
+  color: #111;
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  box-sizing: border-box;
+  line-height: 1.5;
+}
+
+.field__input:focus {
+  border-color: #1D9E75;
+  box-shadow: 0 0 0 3px rgba(29, 158, 117, 0.12);
+}
+
+.field__input--readonly {
+  background: #f7f7f7;
+  color: #888;
+  cursor: default;
+}
+
+.field__input-wrap {
+  position: relative;
+}
+
+.field__input-wrap .field__input {
+  padding-right: 42px;
+}
+
+.field__toggle {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #aaa;
+  display: flex;
+  align-items: center;
+  padding: 2px;
+  line-height: 1;
+}
+
+.field__toggle:hover {
+  color: #555;
+}
+
+.field__error {
+  display: block;
+  font-size: 12px;
+  color: #E24B4A;
+  margin-top: 5px;
+}
+
+.field--error .field__input {
+  border-color: #E24B4A;
+}
+
+.field--error .field__input:focus {
+  box-shadow: 0 0 0 3px rgba(226, 75, 74, 0.12);
+}
+
+.field-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+/* Alerts */
+.alert {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  font-size: 13px;
+  margin-bottom: 1.25rem;
+  line-height: 1.5;
+}
+
+.alert--error {
+  background: #FCEBEB;
+  color: #791F1F;
+  border: 0.5px solid #F09595;
+}
+
+.alert--info {
+  background: #E1F5EE;
+  color: #085041;
+  border: 0.5px solid #9FE1CB;
+}
+
+/* Buttons */
+.btn-primary {
+  width: 100%;
+  padding: 11px 16px;
+  background: #1D9E75;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 0.25rem;
+  letter-spacing: 0.1px;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: #0F6E56;
+}
+
+.btn-primary:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.btn-primary__spinner {
+  width: 15px;
+  height: 15px;
+  border: 2px solid rgba(255, 255, 255, 0.35);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+  flex-shrink: 0;
+}
+
+.btn-secondary {
+  padding: 11px 16px;
+  background: transparent;
+  color: #555;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s;
+  white-space: nowrap;
+}
+
+.btn-secondary:hover {
+  background: #f5f5f5;
+}
+
+.btn-group {
+  display: flex;
+  gap: 10px;
+  margin-top: 0.5rem;
+}
+
+/* Step content titles */
+.step__title {
+  font-size: 22px;
+  font-weight: 700;
+  color: #111;
+  margin-bottom: 4px;
+  letter-spacing: -0.3px;
+}
+
+.step__sub {
+  font-size: 14px;
+  color: #666;
+  margin-bottom: 1.5rem;
+  line-height: 1.5;
+}
+
+@media (max-width: 480px) {
+  .login,
+  .register {
+    width: 100%;
+  }
+}
+
+/* File upload — school logo (drag-drop box) */
+.upload-box {
+  border: 1.5px dashed #d0d0d0;
+  border-radius: 10px;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+  min-height: 110px;
+  position: relative;
+  background: #fafafa;
+}
+
+.upload-box:hover {
+  border-color: #1D9E75;
+  background: #f0fdf8;
+}
+
+.upload-box--has-preview {
+  padding: 0.5rem;
+  min-height: 90px;
+}
+
+.upload-box__icon {
+  color: #bbb;
+}
+
+.upload-box__text {
+  font-size: 13px;
+  color: #555;
+  font-weight: 500;
+}
+
+.upload-box__hint {
+  font-size: 12px;
+  color: #aaa;
+}
+
+.upload-box__preview-img {
+  max-height: 80px;
+  max-width: 100%;
+  object-fit: contain;
+  border-radius: 6px;
+}
+
+.upload-box__remove {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.5);
+  color: #fff;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  transition: background 0.15s;
+}
+
+.upload-box__remove:hover {
+  background: rgba(0, 0, 0, 0.75);
+}
+
+.upload-box__input {
+  display: none;
+}
+
+.avatar-upload {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.avatar-upload__preview {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  overflow: hidden;
+  cursor: pointer;
+  flex-shrink: 0;
+  position: relative;
+  border: 2px dashed #d0d0d0;
+  transition: border-color 0.15s;
+}
+
+.avatar-upload__preview:hover {
+  border-color: #1D9E75;
+}
+
+.avatar-upload__img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.avatar-upload__placeholder {
+  width: 100%;
+  height: 100%;
+  background: #f5f5f5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ccc;
+}
+
+.avatar-upload__overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  opacity: 0;
+  transition: opacity 0.15s;
+  border-radius: 50%;
+}
+
+.avatar-upload__preview:hover .avatar-upload__overlay {
+  opacity: 1;
+}
+
+.avatar-upload__info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.avatar-upload__btn {
+  background: none;
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  padding: 6px 12px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #333;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+  text-align: left;
+  width: fit-content;
+}
+
+.avatar-upload__btn:hover {
+  background: #f5f5f5;
+  border-color: #ccc;
+}
+
+.avatar-upload__hint {
+  font-size: 12px;
+  color: #aaa;
+}
+
+.avatar-upload__remove {
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: 12px;
+  color: #E24B4A;
+  cursor: pointer;
+  text-align: left;
+  width: fit-content;
+}
+
+.avatar-upload__remove:hover {
+  text-decoration: underline;
+}
+
+field__optional {
+  font-size: 10px;
+  font-weight: 400;
+  color: #bbb;
+  text-transform: none;
+  letter-spacing: 0;
+  margin-left: 2px;
+}
+
+/* Global panel backdrop — needed because position:fixed overlays must
+   escape component stacking contexts. The component CSS handles z-index. */
+.panel-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.3);
+  z-index: 200;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}

@@ -1,0 +1,47 @@
+<!-- step1-check.component.html -->
+<div class="step">
+  <h2 class="step__title">Get started</h2>
+  <p class="step__sub">Enter your email and school name to check availability</p>
+
+  @if (errorMessage()) {
+    <div class="alert alert--error" role="alert">{{ errorMessage() }}</div>
+  }
+
+  @if (serverMessage()) {
+    <div class="alert alert--info" role="status">{{ serverMessage() }}</div>
+  }
+
+  <form [formGroup]="form" (ngSubmit)="onSubmit()" novalidate>
+
+    <div class="field" [class.field--error]="email.invalid && email.touched">
+      <label for="s1-email" class="field__label">Email address</label>
+      <input id="s1-email" type="email" formControlName="email"
+             class="field__input" placeholder="you@school.edu.ng"
+             autocomplete="email"/>
+      @if (email.hasError('required') && email.touched) {
+        <span class="field__error">Email is required</span>
+      } @else if (email.hasError('email') && email.touched) {
+        <span class="field__error">Enter a valid email address</span>
+      }
+    </div>
+
+    <div class="field" [class.field--error]="schoolName.invalid && schoolName.touched">
+      <label for="s1-school" class="field__label">School name</label>
+      <input id="s1-school" type="text" formControlName="schoolName"
+             class="field__input" placeholder="e.g. Government College Ibadan"/>
+      @if (schoolName.hasError('required') && schoolName.touched) {
+        <span class="field__error">School name is required</span>
+      }
+    </div>
+
+    <button type="submit" class="btn-primary" [disabled]="form.invalid || isLoading()">
+      @if (isLoading()) {
+        <span class="btn-primary__spinner" aria-hidden="true"></span>
+        Checking...
+      } @else {
+        Check availability
+      }
+    </button>
+
+  </form>
+</div>

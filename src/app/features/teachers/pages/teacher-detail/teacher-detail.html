@@ -1,0 +1,172 @@
+<div class="page">
+  <a routerLink="/app/teachers" class="back-link">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none"
+         stroke="currentColor" stroke-width="2.5" aria-hidden="true">
+      <polyline points="15 18 9 12 15 6"/>
+    </svg>
+    Back to teachers
+  </a>
+
+  @if (isLoading()) {
+    <div class="profile-skeleton"></div>
+  }
+
+  @else if (teacher()) {
+    @let t = teacher()!;
+
+    <div class="profile-header">
+      <div class="profile-header__avatar" aria-hidden="true">
+        {{ initials(t) }}
+      </div>
+      <div class="profile-header__info">
+        <h1 class="profile-header__name">{{ t.firstName }} {{ t.lastName }}</h1>
+        <p class="profile-header__meta">
+          <code class="code-pill">{{ t.staffId }}</code>
+          &nbsp;·&nbsp; {{ t.designation ?? 'Teacher' }}
+          &nbsp;·&nbsp; {{ t.schoolName }}
+        </p>
+      </div>
+      <div class="profile-header__actions">
+        <span class="badge" [class]="statusClass(t.status)">
+          {{ t.status | titlecase }}
+        </span>
+        @if (isAdmin()) {
+          <button class="btn-ghost" (click)="openEdit()">Edit profile</button>
+        }
+      </div>
+    </div>
+
+    <div class="detail-grid">
+      <div class="detail-card">
+        <h2 class="detail-card__title">Contact information</h2>
+        <div class="detail-rows">
+          <div class="detail-row">
+            <span class="detail-row__label">Email</span>
+            <span class="detail-row__value">{{ t.email }}</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-row__label">Phone</span>
+            <span class="detail-row__value">{{ t.phoneNumber }}</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="detail-card">
+        <h2 class="detail-card__title">Professional information</h2>
+        <div class="detail-rows">
+          <div class="detail-row">
+            <span class="detail-row__label">Employment</span>
+            <span class="detail-row__value">{{ employmentLabel(t.employmentType) }}</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-row__label">Qualification</span>
+            <span class="detail-row__value">{{ qualificationLabel(t.highestQualification) }}</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-row__label">Specialization</span>
+            <span class="detail-row__value">{{ t.specialization ?? '—' }}</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-row__label">Experience</span>
+            <span class="detail-row__value">
+              {{ t.yearsOfExperience != null ? t.yearsOfExperience + ' years' : '—' }}
+            </span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-row__label">Join date</span>
+            <span class="detail-row__value">{{ formatDate(t.joinDate) }}</span>
+          </div>
+        </div>
+
+        @if (isAdmin()) {
+          <div class="status-change">
+            <p class="status-change__label">Change status</p>
+            <div class="status-change__options">
+              @for (opt of statusOptions; track opt.value) {
+                <button class="status-option"
+                        [class.status-option--active]="t.status === opt.value"
+                        (click)="changeStatus(opt.value)">
+                  {{ opt.label }}
+                </button>
+              }
+            </div>
+          </div>
+        }
+      </div>
+
+    </div>
+  }
+
+  @if (editOpen()) {
+    <div class="panel-backdrop" (click)="editOpen.set(false)" aria-hidden="true"></div>
+    <aside class="panel" role="dialog" aria-modal="true" aria-label="Edit teacher profile">
+
+      <div class="panel__header">
+        <div>
+          <h2 class="panel__title">Edit profile</h2>
+          <p class="panel__subtitle">Update professional details</p>
+        </div>
+        <button class="panel__close" (click)="editOpen.set(false)" aria-label="Close">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none"
+               stroke="currentColor" stroke-width="2.5" aria-hidden="true">
+            <line x1="18" y1="6" x2="6" y2="18"/>
+            <line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+      </div>
+
+      @if (errorMessage()) {
+        <div class="alert alert--error">{{ errorMessage() }}</div>
+      }
+
+      <form [formGroup]="form" (ngSubmit)="submitEdit()" novalidate>
+        <div class="field-row">
+          <div class="field">
+            <label class="field__label">Employment type</label>
+            <select formControlName="employmentType" class="field__input">
+              <option value="">Not specified</option>
+              @for (et of employmentTypes; track et.value) {
+                <option [value]="et.value">{{ et.label }}</option>
+              }
+            </select>
+          </div>
+          <div class="field">
+            <label class="field__label">Qualification</label>
+            <select formControlName="highestQualification" class="field__input">
+              <option value="">Not specified</option>
+              @for (q of qualifications; track q.value) {
+                <option [value]="q.value">{{ q.label }}</option>
+              }
+            </select>
+          </div>
+        </div>
+
+        <div class="field-row">
+          <div class="field">
+            <label class="field__label">Specialization</label>
+            <input type="text" formControlName="specialization" class="field__input"/>
+          </div>
+          <div class="field">
+            <label class="field__label">Years of experience</label>
+            <input type="number" formControlName="yearsOfExperience"
+                   class="field__input" min="0" max="50"/>
+          </div>
+        </div>
+
+        <div class="field">
+          <label class="field__label">Designation</label>
+          <input type="text" formControlName="designation"
+                 class="field__input" placeholder="e.g. Head of Department"/>
+        </div>
+
+        <button type="submit" class="btn-primary btn--full" [disabled]="isSubmitting()">
+          @if (isSubmitting()) {
+            <span class="spinner" aria-hidden="true"></span> Saving...
+          } @else {
+            Save changes
+          }
+        </button>
+      </form>
+    </aside>
+  }
+</div>

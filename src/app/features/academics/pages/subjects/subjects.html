@@ -1,0 +1,196 @@
+<div class="page">
+  <div class="page__header">
+    <div>
+      <h1 class="page__title">Subjects</h1>
+      <p class="page__sub">{{ filtered().length }} subject(s)</p>
+    </div>
+    <button class="btn-primary" (click)="openCreate()">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none"
+           stroke="currentColor" stroke-width="2.5" aria-hidden="true">
+        <line x1="12" y1="5" x2="12" y2="19"/>
+        <line x1="5" y1="12" x2="19" y2="12"/>
+      </svg>
+      Add subject
+    </button>
+  </div>
+
+  <div class="toolbar">
+    <div class="search-wrap">
+      <svg class="search-wrap__icon" width="15" height="15" viewBox="0 0 24 24"
+           fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+        <circle cx="11" cy="11" r="8"/>
+        <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+      </svg>
+      <input type="search" class="search-wrap__input"
+             placeholder="Search subjects..."
+             [ngModel]="searchQuery()"
+             (ngModelChange)="searchQuery.set($event)"
+             aria-label="Search subjects"/>
+    </div>
+    <button class="filter-tab" [class.filter-tab--active]="!showElectives()"
+            (click)="showElectives.set(false)">All</button>
+    <button class="filter-tab" [class.filter-tab--active]="showElectives()"
+            (click)="showElectives.set(true)">Electives</button>
+  </div>
+
+  @if (isLoading()) {
+    <div class="table-skeleton">
+      @for (i of [1,2,3,4,5]; track i) {
+        <div class="table-skeleton__row"></div>
+      }
+    </div>
+  }
+
+  @else if (filtered().length === 0) {
+    <div class="empty-state">
+      <p class="empty-state__text">
+        {{ searchQuery() ? 'No subjects match your search' : 'No subjects yet' }}
+      </p>
+      @if (!searchQuery()) {
+        <button class="btn-primary" (click)="openCreate()">Add first subject</button>
+      }
+    </div>
+  }
+
+  @else {
+    <div class="table-wrap">
+      <table class="table" aria-label="Subjects list">
+        <thead>
+        <tr>
+          <th>Name</th>
+          <th>Code</th>
+          <th>Category</th>
+          <th>Type</th>
+          <th>Status</th>
+          <th class="table__actions-col">Actions</th>
+        </tr>
+        </thead>
+        <tbody>
+          @for (subject of filtered(); track subject.id) {
+            <tr>
+              <td class="table__name">{{ subject.name }}</td>
+              <td><code class="code-pill">{{ subject.code }}</code></td>
+              <td class="table__cell--muted">{{ subject.category ?? '—' }}</td>
+              <td>
+                @if (subject.isElective) {
+                  <span class="badge badge--purple">Elective</span>
+                } @else {
+                  <span class="badge badge--teal">Core</span>
+                }
+              </td>
+              <td>
+                <button class="badge"
+                        [class.badge--active]="subject.active"
+                        [class.badge--inactive]="!subject.active"
+                        (click)="toggleActive(subject)"
+                        [attr.aria-label]="(subject.active ? 'Deactivate ' : 'Activate ') + subject.name">
+                  {{ subject.active ? 'Active' : 'Inactive' }}
+                </button>
+              </td>
+              <td class="table__actions">
+                <button class="icon-btn" (click)="openEdit(subject)"
+                        aria-label="Edit subject">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                       stroke="currentColor" stroke-width="2" aria-hidden="true">
+                    <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
+                    <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                  </svg>
+                </button>
+                <button class="icon-btn icon-btn--danger" (click)="delete(subject)"
+                        aria-label="Delete subject">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                       stroke="currentColor" stroke-width="2" aria-hidden="true">
+                    <polyline points="3 6 5 6 21 6"/>
+                    <path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/>
+                    <path d="M10 11v6M14 11v6"/>
+                  </svg>
+                </button>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+
+  @if (panelOpen()) {
+    <div class="panel-backdrop" (click)="closePanel()" aria-hidden="true"></div>
+    <aside class="panel" role="dialog" aria-modal="true"
+           [attr.aria-label]="editTarget() ? 'Edit subject' : 'Add subject'">
+      <div class="panel__header">
+        <h2 class="panel__title">{{ editTarget() ? 'Edit subject' : 'Add subject' }}</h2>
+        <button class="panel__close" (click)="closePanel()" aria-label="Close">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none"
+               stroke="currentColor" stroke-width="2.5" aria-hidden="true">
+            <line x1="18" y1="6" x2="6" y2="18"/>
+            <line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+      </div>
+
+      @if (errorMessage()) {
+        <div class="alert alert--error">{{ errorMessage() }}</div>
+      }
+
+      <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
+
+        <div class="field">
+          <label class="field__label">Subject name</label>
+          <input type="text" formControlName="name"
+                 class="field__input" placeholder="e.g. Mathematics"/>
+          @if (form.controls.name.invalid && form.controls.name.touched) {
+            <span class="field__error">Name is required</span>
+          }
+        </div>
+
+        <div class="field">
+          <label class="field__label">Subject code</label>
+          <input type="text" formControlName="code"
+                 class="field__input" placeholder="e.g. MTH101"/>
+          @if (form.controls.code.invalid && form.controls.code.touched) {
+            <span class="field__error">Code is required</span>
+          }
+        </div>
+
+        <div class="field">
+          <label class="field__label">Category</label>
+          <input type="text" formControlName="category"
+                 class="field__input" placeholder="e.g. Sciences"
+                 list="category-suggestions"/>
+          <datalist id="category-suggestions">
+            @for (c of categorySuggestions; track c) {
+              <option [value]="c"></option>
+            }
+          </datalist>
+        </div>
+
+        <div class="field">
+          <label class="field__label">Description</label>
+          <input type="text" formControlName="description"
+                 class="field__input" placeholder="Brief description"/>
+        </div>
+
+        <!-- Elective toggle -->
+        <div class="field field--checkbox">
+          <label class="checkbox-label">
+            <input type="checkbox" formControlName="isElective"
+                   class="checkbox-input"/>
+            <span class="checkbox-text">Mark as elective subject</span>
+          </label>
+          <span class="field__hint">
+            Elective subjects are optional for students
+          </span>
+        </div>
+
+        <button type="submit" class="btn-primary btn--full"
+                [disabled]="isSubmitting()">
+          @if (isSubmitting()) {
+            <span class="spinner" aria-hidden="true"></span> Saving...
+          } @else {
+            {{ editTarget() ? 'Save changes' : 'Add subject' }}
+          }
+        </button>
+      </form>
+    </aside>
+  }
+</div>

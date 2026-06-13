@@ -1,0 +1,98 @@
+<div class="register">
+
+  <div class="auth-tabs">
+    <a routerLink="/auth/login" class="auth-tab">Sign in</a>
+    <span class="auth-tab auth-tab--active">Create account</span>
+  </div>
+
+  <!-- Step progress bar -->
+  <div class="stepper" aria-label="Registration progress">
+
+    <div class="stepper__item">
+      <div class="stepper__circle"
+           [class.stepper__circle--done]="state().step > 1"
+           [class.stepper__circle--active]="state().step === 1">
+        @if (state().step > 1) {
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none"
+               stroke="currentColor" stroke-width="3" aria-hidden="true">
+            <polyline points="20 6 9 17 4 12"/>
+          </svg>
+        } @else {
+          1
+        }
+      </div>
+      <span class="stepper__label" [class.stepper__label--active]="state().step === 1">
+        Check
+      </span>
+    </div>
+
+    <div class="stepper__line" [class.stepper__line--done]="state().step > 1"></div>
+
+    <div class="stepper__item">
+      <div class="stepper__circle"
+           [class.stepper__circle--done]="state().step > 2"
+           [class.stepper__circle--active]="state().step === 2"
+           [class.stepper__circle--pending]="state().step < 2">
+        @if (state().step > 2) {
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none"
+               stroke="currentColor" stroke-width="3" aria-hidden="true">
+            <polyline points="20 6 9 17 4 12"/>
+          </svg>
+        } @else {
+          2
+        }
+      </div>
+      <span class="stepper__label" [class.stepper__label--active]="state().step === 2">
+        School
+      </span>
+    </div>
+
+    <div class="stepper__line" [class.stepper__line--done]="state().step > 2"></div>
+
+    <div class="stepper__item">
+      <div class="stepper__circle"
+           [class.stepper__circle--active]="state().step === 3"
+           [class.stepper__circle--pending]="state().step < 3">
+        3
+      </div>
+      <span class="stepper__label" [class.stepper__label--active]="state().step === 3">
+        Details
+      </span>
+    </div>
+
+  </div>
+
+  <!-- Step router — only the active step renders -->
+  @switch (state().step) {
+    @case (1) {
+      <app-step1-check
+        [initialEmail]="state().email"
+        [initialSchoolName]="state().schoolName"
+        (stepComplete)="onStep1Complete($event)"
+      />
+    }
+    @case (2) {
+      <app-step2-school
+        [email]="state().email"
+        [schoolName]="state().schoolName"
+        (stepComplete)="onStep2Complete($event)"
+        (back)="goBack()"
+      />
+    }
+    @case (3) {
+      <app-step3-user
+        [email]="state().email"
+        [schoolId]="state().schoolId!"
+        [schoolName]="state().schoolName"
+        (stepComplete)="onRegistrationComplete()"
+        (back)="goBack()"
+      />
+    }
+  }
+
+  <p class="register__footer">
+    Already have an account?
+    <a routerLink="/auth/login" class="register__link">Sign in</a>
+  </p>
+
+</div>

@@ -1,0 +1,116 @@
+<header class="topbar" role="banner">
+  <!-- Left: hamburger (mobile) -->
+  <button
+    class="topbar__menu-btn"
+    (click)="menuToggled.emit()"
+    aria-label="Toggle navigation menu"
+  >
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+         stroke="currentColor" stroke-width="2" aria-hidden="true">
+      <line x1="3" y1="6" x2="21" y2="6"/>
+      <line x1="3" y1="12" x2="21" y2="12"/>
+      <line x1="3" y1="18" x2="21" y2="18"/>
+    </svg>
+  </button>
+
+  @if (currentUser()) {
+    <div class="topbar__breadcrumb">
+    <span class="topbar__school-name">
+      {{ currentUser()!.schoolName }}
+    </span>
+    </div>
+  }
+
+  <!-- Right: actions -->
+  <div class="topbar__actions">
+<!--    <app-theme-toggle />-->
+
+    <!-- Notifications bell -->
+    <div class="topbar__notif-wrapper">
+      <button
+        class="topbar__action-btn"
+        (click)="toggleNotifications()"
+        aria-label="View notifications"
+      >
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+             stroke="currentColor" stroke-width="2" stroke-linecap="round"
+             stroke-linejoin="round" aria-hidden="true">
+          <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+          <path d="M13.73 21a2 2 0 01-3.46 0"/>
+        </svg>
+
+        @if (totalUnread() > 0) {
+          <span class="topbar__notif-badge" aria-label="Unread notifications">
+            {{ totalUnread() > 99 ? '99+' : totalUnread() }}
+          </span>
+        }
+      </button>
+
+      <!-- Notifications dropdown -->
+      @if (showNotifications()) {
+        <div class="topbar__notif-dropdown">
+          <div class="topbar__notif-header">
+            <span class="topbar__notif-title">Notifications</span>
+          </div>
+
+          <div class="topbar__notif-list">
+            @if (unreadConvCount() === 0 && recentAnnouncements().length === 0) {
+              <div class="topbar__notif-empty">No new notifications</div>
+            } @else {
+              <!-- Messages with unread -->
+              @for (conv of notificationConversations().filter(c => c.unreadCount > 0); track conv.id) {
+                <button class="topbar__notif-item" (click)="goToMessaging()">
+                  <span class="topbar__notif-item-avatar">
+                    {{ conv.type === 'GROUP' ? 'G' : conv.participants[0]?.firstName?.charAt(0) }}{{ conv.type === 'GROUP' ? '' : conv.participants[0]?.lastName?.charAt(0) }}
+                  </span>
+                  <span class="topbar__notif-item-info">
+                    <span class="topbar__notif-item-name">
+                      {{ conv.title || (conv.type === 'GROUP' ? 'Group Chat' : (conv.participants[0]?.firstName + ' ' + conv.participants[0]?.lastName)) }}
+                    </span>
+                    <span class="topbar__notif-item-msg">
+                      {{ conv.lastMessage?.content || 'New message' }}
+                    </span>
+                  </span>
+                  @if (conv.unreadCount > 0) {
+                    <span class="topbar__notif-item-count">{{ conv.unreadCount }}</span>
+                  }
+                </button>
+              }
+
+              <!-- Recent announcements -->
+              @for (ann of recentAnnouncements(); track ann.id) {
+                <button class="topbar__notif-item" (click)="goToAnnouncements()">
+                  <span class="topbar__notif-item-avatar" style="background:var(--primary);color:#fff">
+                    A
+                  </span>
+                  <span class="topbar__notif-item-info">
+                    <span class="topbar__notif-item-name">{{ ann.title }}</span>
+                    <span class="topbar__notif-item-msg">{{ ann.content }}</span>
+                  </span>
+                </button>
+              }
+            }
+          </div>
+
+          <button class="topbar__notif-footer" (click)="goToMessaging()">
+            View all messages
+          </button>
+        </div>
+      }
+    </div>
+
+    <!-- User avatar -->
+    @if (currentUser()) {
+      <div class="topbar__user" role="button" tabindex="0" aria-label="User menu">
+        <div class="topbar__avatar" aria-hidden="true">
+          {{ currentUser()!.firstName[0] }}{{ currentUser()!.lastName[0] }}
+        </div>
+<!--        <span class="topbar__user-name">-->
+<!--          {{ currentUser()!.firstName }}-->
+<!--        </span>-->
+      </div>
+    }
+    <app-theme-toggle />
+  </div>
+
+</header>
