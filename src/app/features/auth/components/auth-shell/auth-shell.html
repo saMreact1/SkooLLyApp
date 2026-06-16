@@ -2,7 +2,13 @@
 
   <!-- Left decorative panel -->
   <div class="auth-panel">
-    <div class="auth-panel__brand">
+    <!-- Decorative shapes -->
+    <div class="auth-panel__shape auth-panel__shape--1"></div>
+    <div class="auth-panel__shape auth-panel__shape--2"></div>
+    <div class="auth-panel__shape auth-panel__shape--3"></div>
+    <div class="auth-panel__grid"></div>
+
+    <a routerLink="/" class="auth-panel__brand">
       <div class="auth-panel__icon">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
              stroke="currentColor" stroke-width="2" stroke-linecap="round"
@@ -12,7 +18,7 @@
         </svg>
       </div>
       <span class="auth-panel__name">skooLLy</span>
-    </div>
+    </a>
 
     <div class="auth-panel__body">
       <h1 class="auth-panel__headline">
@@ -25,23 +31,64 @@
     </div>
 
     <div class="auth-panel__features">
-      <div class="auth-panel__feature">
-        <span class="auth-panel__feature-dot"></span>
-        Role-based dashboards
+      <div class="auth-panel__feature-card">
+        <div class="auth-panel__feature-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/>
+          </svg>
+        </div>
+        <div>
+          <div class="auth-panel__feature-title">Role-based dashboards</div>
+          <div class="auth-panel__feature-desc">Tailored views for every user</div>
+        </div>
       </div>
-      <div class="auth-panel__feature">
-        <span class="auth-panel__feature-dot"></span>
-        Attendance & results tracking
+      <div class="auth-panel__feature-card">
+        <div class="auth-panel__feature-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
+          </svg>
+        </div>
+        <div>
+          <div class="auth-panel__feature-title">Attendance & results</div>
+          <div class="auth-panel__feature-desc">Track and publish in real time</div>
+        </div>
       </div>
-      <div class="auth-panel__feature">
-        <span class="auth-panel__feature-dot"></span>
-        Fees & communication
+      <div class="auth-panel__feature-card">
+        <div class="auth-panel__feature-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/>
+          </svg>
+        </div>
+        <div>
+          <div class="auth-panel__feature-title">Communication hub</div>
+          <div class="auth-panel__feature-desc">Announcements & messaging</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="auth-panel__testimonial">
+      <div class="auth-panel__testimonial-quote">
+        "skooLLy transformed how we manage our school. Attendance alone saved us hours every week."
+      </div>
+      <div class="auth-panel__testimonial-author">
+        <div class="auth-panel__testimonial-avatar">AB</div>
+        <div>
+          <div class="auth-panel__testimonial-name">Dr. Amina Bello</div>
+          <div class="auth-panel__testimonial-role">Principal, Greensprings School</div>
+        </div>
       </div>
     </div>
   </div>
 
   <!-- Right form panel — router outlet renders each auth page here -->
   <div class="auth-form-panel">
+    <a routerLink="/" class="auth-form-panel__back">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="19" y1="12" x2="5" y2="12"/>
+        <polyline points="12 19 5 12 12 5"/>
+      </svg>
+      Back to home
+    </a>
     <router-outlet />
   </div>
 

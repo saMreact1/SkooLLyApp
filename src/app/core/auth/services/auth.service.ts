@@ -66,7 +66,7 @@ export class AuthService {
     this.tokens.clear();
     sessionStorage.removeItem(this.USER_KEY);
     this._currentUser.set(null);
-    this.router.navigate(['/auth/login']);
+    this.router.navigate(['']);
   }
 
   forgotPassword(payload: ForgotPasswordRequest): Observable<void> {

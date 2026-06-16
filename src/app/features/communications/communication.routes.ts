@@ -35,11 +35,4 @@ export const COMMUNICATION_ROUTES: Routes = [
     loadComponent: () =>
       import('./pages/messaging/messaging').then(m => m.Messaging),
   },
-  {
-    path: 'broadcasts',
-    canActivate: [roleGuard],
-    data: { roles: ['SUPER_ADMIN', 'ADMIN'] },
-    loadComponent: () =>
-      import('./pages/broadcasts/broadcasts').then(m => m.Broadcasts),
-  },
 ];

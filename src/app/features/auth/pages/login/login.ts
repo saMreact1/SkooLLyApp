@@ -49,7 +49,7 @@ export class Login {
       error: (err) => {
         this.isLoading.set(false);
         this.errorMessage.set(
-          err?.error?.message ?? 'Invalid Email or Password. Please try again.'
+          err?.data?.message ?? 'Invalid Email or Password. Please try again.'
         )
       }
     });
