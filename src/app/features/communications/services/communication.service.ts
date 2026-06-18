@@ -5,6 +5,7 @@ import { map, takeUntil } from 'rxjs/operators';
 import { environment } from '../../../../environments/environment';
 import { TokenService } from '../../../core/auth/services/token.service';
 import { WebSocketService } from '../../../core/services/websocket/websocket.service';
+import { PagedResponse } from '../../../shared/models/paged-response.model';
 import {
   Announcement,
   CreateAnnouncementRequest,
@@ -118,8 +119,10 @@ export class CommunicationService {
     this.announcements$.next(notification);
   }
 
-  getAllAnnouncements(filters?: CommunicationFilters): Observable<Announcement[]> {
-    let params = new HttpParams();
+  getAllAnnouncements(page = 0, size = 20, filters?: CommunicationFilters): Observable<PagedResponse<Announcement>> {
+    let params = new HttpParams()
+      .set('page', String(page))
+      .set('size', String(size));
     if (filters) {
       Object.entries(filters).forEach(([key, value]) => {
         if (value !== undefined && value !== null) {
@@ -128,14 +131,17 @@ export class CommunicationService {
       });
     }
     return this.http
-      .get<ApiResponse<Announcement[]>>(`${this.api}/announcements`, { params })
+      .get<ApiResponse<PagedResponse<Announcement>>>(`${this.api}/announcements`, { params })
       .pipe(map(r => r.data));
   }
 
-  getVisibleAnnouncements(target: AnnouncementTarget): Observable<Announcement[]> {
-    const params = new HttpParams().set('target', target);
+  getVisibleAnnouncements(target: AnnouncementTarget, page = 0, size = 20): Observable<PagedResponse<Announcement>> {
+    const params = new HttpParams()
+      .set('target', target)
+      .set('page', String(page))
+      .set('size', String(size));
     return this.http
-      .get<ApiResponse<Announcement[]>>(`${this.api}/announcements/visible`, { params })
+      .get<ApiResponse<PagedResponse<Announcement>>>(`${this.api}/announcements/visible`, { params })
       .pipe(map(r => r.data));
   }
 
@@ -175,13 +181,13 @@ export class CommunicationService {
       .pipe(map(r => r.data));
   }
 
-  loadAnnouncements(target?: AnnouncementTarget): void {
+  loadAnnouncements(target?: AnnouncementTarget, page = 0, size = 20): void {
     const obs = target
-      ? this.getVisibleAnnouncements(target)
-      : this.getAllAnnouncements();
+      ? this.getVisibleAnnouncements(target, page, size)
+      : this.getAllAnnouncements(page, size);
 
     obs.pipe(takeUntil(this.destroy$)).subscribe({
-      next: (list) => this._announcements.set(list),
+      next: (res) => this._announcements.set(res.content),
       error: (err) => console.error('Failed to load announcements:', err),
     });
   }

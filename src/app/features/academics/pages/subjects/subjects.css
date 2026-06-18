@@ -63,6 +63,7 @@
   transition: background 0.15s;
   white-space: nowrap;
   flex-shrink: 0;
+  width: max-content;
 }
 .btn-primary:hover:not(:disabled) { background: var(--accent-strong); }
 .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }

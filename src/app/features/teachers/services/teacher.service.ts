@@ -3,6 +3,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { environment } from '../../../../environments/environment';
+import { PagedResponse } from '../../../shared/models/paged-response.model';
 import {
   ApiResponse,
   CreateTeacherRequest,
@@ -16,9 +17,11 @@ export class TeacherService {
   private readonly http = inject(HttpClient);
   private readonly api  = `${environment.apiUrl}/teachers`;
 
-  getAll(): Observable<TeacherResponse[]> {
+  getAll(page = 0, size = 20): Observable<PagedResponse<TeacherResponse>> {
     return this.http
-      .get<ApiResponse<TeacherResponse[]>>(this.api)
+      .get<ApiResponse<PagedResponse<TeacherResponse>>>(`${this.api}`, {
+        params: { page: String(page), size: String(size) }
+      })
       .pipe(map(r => r.data));
   }
 

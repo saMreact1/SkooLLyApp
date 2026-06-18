@@ -14,7 +14,7 @@ import {TeacherResponse} from '../../../teachers/models/teacher.models';
 import {ConfirmationService} from '../../../../shared/components/confirmation-modal/confirmation.service';
 
 const TIME_SLOTS = [
-  '07:30', '08:00', '09:00', '10:00', '11:00', '12:00',
+  '07:00', '08:00', '09:00', '10:00', '11:00', '12:00',
   '13:00', '14:00', '15:00',
 ];
 
@@ -100,28 +100,28 @@ export class Timetable implements OnInit {
   );
 
   ngOnInit(): void {
-    this.academic.getSessions().subscribe({
-      next: sessions => {
-        this.sessions.set(sessions);
+    this.academic.getSessions(0, 100).subscribe({
+      next: res => {
+        this.sessions.set(res.content);
         this.isLoadingSessions.set(false);
         // Auto-select current session
-        const current = sessions.find(s => s.isCurrent);
+        const current = res.content.find(s => s.isCurrent);
         if (current) this.selectSession(current.id);
       },
       error: () => this.isLoadingSessions.set(false),
     });
 
-    this.academic.getSubjects().subscribe({
-      next: subjects => {
-        this.subjects.set(subjects);
-        subjects.forEach((s, i) => {
+    this.academic.getSubjects(0, 100).subscribe({
+      next: res => {
+        this.subjects.set(res.content);
+        res.content.forEach((s, i) => {
           this.colorMap.set(s.id, SLOT_COLOURS[i % SLOT_COLOURS.length]);
         });
       },
     });
 
-    this.teacherSrv.getAll().subscribe({
-      next: teachers => this.teachers.set(teachers),
+    this.teacherSrv.getAll(0, 200).subscribe({
+      next: res => this.teachers.set(res.content),
     });
   }
 
@@ -152,8 +152,8 @@ export class Timetable implements OnInit {
 
     // Load classrooms (school-scoped, not term-scoped)
     if (this.classrooms().length === 0) {
-      this.academic.getClassrooms().subscribe({
-        next: rooms => this.classrooms.set(rooms),
+      this.academic.getClassrooms(0, 100).subscribe({
+        next: res => this.classrooms.set(res.content),
       });
     }
   }

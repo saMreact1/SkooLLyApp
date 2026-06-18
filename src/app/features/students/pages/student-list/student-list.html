@@ -201,6 +201,9 @@
         </tbody>
       </table>
     </div>
+    @if (pagedResponse()) {
+      <app-paginator [pageData]="pagedResponse()!" (goToPage)="goToPage($event)"/>
+    }
   }
 
   <!-- ── Create student panel ────────────────────────────────────────────── -->

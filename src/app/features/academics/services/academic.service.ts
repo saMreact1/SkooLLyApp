@@ -3,6 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { environment } from '../../../../environments/environment';
+import { PagedResponse } from '../../../shared/models/paged-response.model';
 import {
   ApiResponse,
   CreateSessionRequest,   SessionResponse,
@@ -25,9 +26,11 @@ export class AcademicService {
       .pipe(map(r => r.data));
   }
 
-  getSessions(): Observable<SessionResponse[]> {
+  getSessions(page = 0, size = 20): Observable<PagedResponse<SessionResponse>> {
     return this.http
-      .get<ApiResponse<SessionResponse[]>>(`${this.api}/sessions`)
+      .get<ApiResponse<PagedResponse<SessionResponse>>>(`${this.api}/sessions`, {
+        params: { page: String(page), size: String(size) }
+      })
       .pipe(map(r => r.data));
   }
 
@@ -113,10 +116,15 @@ export class AcademicService {
     isElective: !!(s['elective'] ?? s['isElective'] ?? s['is_elective']),
   }) as SubjectResponse;
 
-  getSubjects(): Observable<SubjectResponse[]> {
+  getSubjects(page = 0, size = 20): Observable<PagedResponse<SubjectResponse>> {
     return this.http
-      .get<ApiResponse<Record<string, unknown>[]>>(`${this.api}/subjects`)
-      .pipe(map(r => r.data.map(this.mapSubject)));
+      .get<ApiResponse<PagedResponse<Record<string, unknown>>>>(`${this.api}/subjects`, {
+        params: { page: String(page), size: String(size) }
+      })
+      .pipe(map(r => ({
+        ...r.data,
+        content: r.data.content.map(this.mapSubject),
+      })));
   }
 
   getSubjectById(id: number): Observable<SubjectResponse> {
@@ -161,9 +169,11 @@ export class AcademicService {
       .pipe(map(r => r.data));
   }
 
-  getClassrooms(): Observable<ClassroomResponse[]> {
+  getClassrooms(page = 0, size = 20): Observable<PagedResponse<ClassroomResponse>> {
     return this.http
-      .get<ApiResponse<ClassroomResponse[]>>(`${this.api}/classrooms`)
+      .get<ApiResponse<PagedResponse<ClassroomResponse>>>(`${this.api}/classrooms`, {
+        params: { page: String(page), size: String(size) }
+      })
       .pipe(map(r => r.data));
   }
 

@@ -4,6 +4,8 @@ import {FormBuilder, FormsModule, ReactiveFormsModule, Validators} from '@angula
 import {AcademicService} from '../../services/academic.service';
 import {SubjectResponse} from '../../models/academic.model';
 import {ConfirmationService} from '../../../../shared/components/confirmation-modal/confirmation.service';
+import {PagedResponse} from '../../../../shared/models/paged-response.model';
+import {Paginator} from '../../../../shared/components/paginator/paginator';
 
 @Component({
   selector: 'app-subjects',
@@ -11,6 +13,7 @@ import {ConfirmationService} from '../../../../shared/components/confirmation-mo
     CommonModule,
     ReactiveFormsModule,
     FormsModule,
+    Paginator,
   ],
   templateUrl: './subjects.html',
   styleUrls: ['./subjects.css', '../../../../../styles/academics.css'],
@@ -21,7 +24,11 @@ export class Subjects implements OnInit {
   private readonly fb       = inject(FormBuilder);
   private readonly confirm  = inject(ConfirmationService);
 
-  readonly subjects     = signal<SubjectResponse[]>([]);
+  readonly pagedResponse = signal<PagedResponse<SubjectResponse> | null>(null);
+  readonly currentPage = signal(0);
+  readonly pageSize = signal(20);
+
+  readonly subjects = computed(() => this.pagedResponse()?.content ?? []);
   readonly isLoading    = signal(true);
   readonly isSubmitting = signal(false);
   readonly panelOpen    = signal(false);
@@ -63,10 +70,15 @@ export class Subjects implements OnInit {
   ngOnInit(): void { this.load(); }
 
   load(): void {
-    this.academic.getSubjects().subscribe({
-      next:  list => { this.subjects.set(list); this.isLoading.set(false); },
+    this.academic.getSubjects(this.currentPage(), this.pageSize()).subscribe({
+      next:  res => { this.pagedResponse.set(res); this.isLoading.set(false); },
       error: ()  => { this.isLoading.set(false); },
     });
+  }
+
+  goToPage(page: number): void {
+    this.currentPage.set(page);
+    this.load();
   }
 
   openCreate(): void {
@@ -112,12 +124,9 @@ export class Subjects implements OnInit {
       });
 
     req$.subscribe({
-      next: saved => {
-        this.subjects.update(list =>
-          target
-            ? list.map(s => s.id === saved.id ? saved : s)
-            : [saved, ...list]
-        );
+      next: () => {
+        if (!target) { this.currentPage.set(0); }
+        this.load();
         this.closePanel();
         this.isSubmitting.set(false);
       },
@@ -130,12 +139,7 @@ export class Subjects implements OnInit {
 
   toggleActive(subject: SubjectResponse): void {
     this.academic.updateSubject(subject.id, { active: !subject.active })
-      .subscribe({
-        next: updated =>
-          this.subjects.update(list =>
-            list.map(s => s.id === updated.id ? updated : s)
-          ),
-      });
+      .subscribe({ next: () => this.load() });
   }
 
   async delete(subject: SubjectResponse): Promise<void> {
@@ -146,7 +150,7 @@ export class Subjects implements OnInit {
     });
     if (!confirmed) return;
     this.academic.deleteSubject(subject.id).subscribe({
-      next: () => this.subjects.update(list => list.filter(s => s.id !== subject.id)),
+      next: () => this.load(),
     });
   }
 

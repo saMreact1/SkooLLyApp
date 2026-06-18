@@ -41,6 +41,7 @@
   border: none; border-radius: 8px; font-size: 13.5px;
   font-weight: 500; cursor: pointer; transition: background 0.15s;
   white-space: nowrap; flex-shrink: 0;
+  width: max-content;
 }
 .btn-primary:hover:not(:disabled) { background: var(--accent-strong); }
 .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
