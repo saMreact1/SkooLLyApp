@@ -4,12 +4,15 @@ import {FormBuilder, ReactiveFormsModule, Validators} from '@angular/forms';
 import {AcademicService} from '../../services/academic.service';
 import {SessionResponse, TermResponse} from '../../models/academic.model';
 import {ConfirmationService} from '../../../../shared/components/confirmation-modal/confirmation.service';
+import {PagedResponse} from '../../../../shared/models/paged-response.model';
+import {Paginator} from '../../../../shared/components/paginator/paginator';
 
 @Component({
   selector: 'app-sessions',
   imports: [
     CommonModule,
     ReactiveFormsModule,
+    Paginator,
   ],
   templateUrl: './sessions.html',
   styleUrl: './sessions.css',
@@ -20,7 +23,11 @@ export class Sessions implements OnInit {
   private fb = inject(FormBuilder);
   private readonly confirm = inject(ConfirmationService);
 
-  readonly sessions = signal<SessionResponse[]>([]);
+  readonly pagedResponse = signal<PagedResponse<SessionResponse> | null>(null);
+  readonly currentPage = signal(0);
+  readonly pageSize = signal(20);
+
+  readonly sessions = computed(() => this.pagedResponse()?.content ?? []);
   readonly isLoading = signal(true);
   readonly isSubmitting = signal(false);
   readonly panelOpen = signal(false);
@@ -53,10 +60,15 @@ export class Sessions implements OnInit {
 
   loadSessions(): void {
     this.isLoading.set(true);
-    this.academic.getSessions().subscribe({
-      next:  sessions => { this.sessions.set(sessions); this.isLoading.set(false); },
-      error: ()       => { this.isLoading.set(false); },
+    this.academic.getSessions(this.currentPage(), this.pageSize()).subscribe({
+      next:  res => { this.pagedResponse.set(res); this.isLoading.set(false); },
+      error: ()  => { this.isLoading.set(false); },
     });
+  }
+
+  goToPage(page: number): void {
+    this.currentPage.set(page);
+    this.loadSessions();
   }
 
   submitSession(): void {
@@ -68,8 +80,9 @@ export class Sessions implements OnInit {
       startDate: v.startDate!,
       endDate:   v.endDate!,
     }).subscribe({
-      next: session => {
-        this.sessions.update(list => [session, ...list]);
+      next: () => {
+        this.currentPage.set(0);
+        this.loadSessions();
         this.panelOpen.set(false);
         this.sessionForm.reset();
         this.isSubmitting.set(false);
@@ -89,32 +102,13 @@ export class Sessions implements OnInit {
 
   setCurrentSession(session: SessionResponse): void {
     this.academic.setCurrentSession(session.id).subscribe({
-      next: updated => {
-        // Mark all as not current, then mark the updated one
-        this.sessions.update(list =>
-          list.map(s => ({
-            ...s,
-            isCurrent: s.id === updated.id,
-          }))
-        );
-      },
+      next: () => { this.loadSessions(); },
     });
   }
 
   setCurrentTerm(term: TermResponse): void {
     this.academic.setCurrentTerm(term.id).subscribe({
-      next: updated => {
-        // Update the term inside its parent session
-        this.sessions.update(list =>
-          list.map(s => ({
-            ...s,
-            terms: s.terms.map(t => ({
-              ...t,
-              isCurrent: t.id === updated.id,
-            })),
-          }))
-        );
-      },
+      next: () => { this.loadSessions(); },
     });
   }
 
@@ -130,13 +124,8 @@ export class Sessions implements OnInit {
       startDate: v.startDate!,
       endDate:   v.endDate!,
     }).subscribe({
-      next: term => {
-        this.sessions.update(list =>
-          list.map(s => s.id === session.id
-            ? { ...s, terms: [...s.terms, term] }
-            : s
-          )
-        );
+      next: () => {
+        this.loadSessions();
         this.termPanelFor.set(null);
         this.isSubmitting.set(false);
       },
@@ -155,8 +144,7 @@ export class Sessions implements OnInit {
     });
     if (!confirmed) return;
     this.academic.deleteSession(session.id).subscribe({
-      next: () =>
-        this.sessions.update(list => list.filter(s => s.id !== session.id)),
+      next: () => this.loadSessions(),
     });
   }
 
@@ -168,14 +156,7 @@ export class Sessions implements OnInit {
     });
     if (!confirmed) return;
     this.academic.deleteTerm(term.id).subscribe({
-      next: () => {
-        this.sessions.update(list =>
-          list.map(s => s.id === sessionId
-            ? { ...s, terms: s.terms.filter(t => t.id !== term.id) }
-            : s
-          )
-        );
-      },
+      next: () => { this.loadSessions(); },
     });
   }
 

@@ -158,5 +158,8 @@
         </article>
       }
     }
+    @if (pagedResponse()) {
+      <app-paginator [pageData]="pagedResponse()!" (goToPage)="goToPage($event)"/>
+    }
   </div>
 </div>

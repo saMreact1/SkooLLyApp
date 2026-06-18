@@ -6,6 +6,8 @@ import {ClassroomResponse} from '../../models/academic.model';
 import {TeacherService} from '../../../teachers/services/teacher.service';
 import {TeacherResponse} from '../../../teachers/models/teacher.models';
 import {ConfirmationService} from '../../../../shared/components/confirmation-modal/confirmation.service';
+import {PagedResponse} from '../../../../shared/models/paged-response.model';
+import {Paginator} from '../../../../shared/components/paginator/paginator';
 
 @Component({
   selector: 'app-classrooms',
@@ -13,6 +15,7 @@ import {ConfirmationService} from '../../../../shared/components/confirmation-mo
     CommonModule,
     ReactiveFormsModule,
     FormsModule,
+    Paginator,
   ],
   templateUrl: './classrooms.html',
   styleUrl: './classrooms.css',
@@ -25,7 +28,11 @@ export class Classrooms implements OnInit {
   private readonly confirm  = inject(ConfirmationService);
 
   // readonly sessions          = signal<AcademicSessionResponse[]>([]);
-  readonly classrooms        = signal<ClassroomResponse[]>([]);
+  readonly pagedResponse = signal<PagedResponse<ClassroomResponse> | null>(null);
+  readonly currentPage = signal(0);
+  readonly pageSize = signal(20);
+
+  readonly classrooms = computed(() => this.pagedResponse()?.content ?? []);
   readonly teachers         = signal<TeacherResponse[]>([]);
   readonly selectedSessionId = signal<number | null>(null);
   readonly isLoading = signal(true);
@@ -82,17 +89,22 @@ export class Classrooms implements OnInit {
 
   ngOnInit(): void {
     this.loadClassrooms();
-    this.teacherSrv.getAll().subscribe({
-      next: list => this.teachers.set(list),
+    this.teacherSrv.getAll(0, 200).subscribe({
+      next: res => this.teachers.set(res.content),
     });
   }
 
   loadClassrooms(): void {
     this.isLoading.set(true);
-    this.academic.getClassrooms().subscribe({
-      next:  list => { this.classrooms.set(list); this.isLoading.set(false); },
-      error: ()    => { this.isLoading.set(false); },
+    this.academic.getClassrooms(this.currentPage(), this.pageSize()).subscribe({
+      next:  res => { this.pagedResponse.set(res); this.isLoading.set(false); },
+      error: ()  => { this.isLoading.set(false); },
     });
+  }
+
+  goToPage(page: number): void {
+    this.currentPage.set(page);
+    this.loadClassrooms();
   }
 
   openCreate(): void {
@@ -130,8 +142,9 @@ export class Classrooms implements OnInit {
       classTeacherId: v.classTeacherId ?? undefined,
       level: v.level || undefined,
     }).subscribe({
-      next: room => {
-        this.classrooms.update(list => [room, ...list]);
+      next: () => {
+        this.currentPage.set(0);
+        this.loadClassrooms();
         this.closePanel();
         this.isSubmitting.set(false);
       },
@@ -157,10 +170,8 @@ export class Classrooms implements OnInit {
       level:          v.level          || undefined,
       active:         v.active         ?? undefined,
     }).subscribe({
-      next: updated => {
-        this.classrooms.update(list =>
-          list.map(c => c.id === updated.id ? updated : c)
-        );
+      next: () => {
+        this.loadClassrooms();
         this.closePanel();
         this.isSubmitting.set(false);
       },
@@ -179,8 +190,7 @@ export class Classrooms implements OnInit {
     });
     if (!confirmed) return;
     this.academic.deleteClassroom(room.id).subscribe({
-      next: () =>
-        this.classrooms.update(list => list.filter(c => c.id !== room.id)),
+      next: () => this.loadClassrooms(),
     });
   }
 

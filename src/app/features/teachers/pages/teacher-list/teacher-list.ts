@@ -13,6 +13,8 @@ import {
 } from '../../models/teacher.models';
 import {Gender} from '../../../../core/auth/models/auth.model';
 import {ConfirmationService} from '../../../../shared/components/confirmation-modal/confirmation.service';
+import {Paginator} from '../../../../shared/components/paginator';
+import {PagedResponse} from '../../../../shared/models/paged-response.model';
 
 @Component({
   selector: 'app-teacher-list',
@@ -20,6 +22,7 @@ import {ConfirmationService} from '../../../../shared/components/confirmation-mo
     CommonModule,
     FormsModule,
     ReactiveFormsModule,
+    Paginator,
   ],
   templateUrl: './teacher-list.html',
   styleUrl: './teacher-list.css',
@@ -32,8 +35,12 @@ export class TeacherList implements OnInit {
   private readonly router  = inject(Router);
   private readonly confirm = inject(ConfirmationService);
 
-  readonly teachers     = signal<TeacherResponse[]>([]);
-  readonly isLoading    = signal(true);
+  readonly pagedResponse = signal<PagedResponse<TeacherResponse> | null>(null);
+  readonly currentPage   = signal(0);
+  readonly pageSize      = signal(20);
+
+  readonly teachers  = computed(() => this.pagedResponse()?.content ?? []);
+  readonly isLoading  = signal(true);
   readonly isSubmitting = signal(false);
   readonly panelOpen    = signal(false);
   readonly searchQuery  = signal('');
@@ -127,10 +134,15 @@ export class TeacherList implements OnInit {
 
   load(): void {
     this.isLoading.set(true);
-    this.service.getAll().subscribe({
-      next:  list => { this.teachers.set(list); this.isLoading.set(false); },
-      error: ()   => { this.isLoading.set(false); },
+    this.service.getAll(this.currentPage(), this.pageSize()).subscribe({
+      next:  res => { this.pagedResponse.set(res); this.isLoading.set(false); },
+      error: ()  => { this.isLoading.set(false); },
     });
+  }
+
+  goToPage(page: number): void {
+    this.currentPage.set(page);
+    this.load();
   }
 
   openCreate(): void {
@@ -162,8 +174,8 @@ export class TeacherList implements OnInit {
     };
 
     this.service.create(payload).subscribe({
-      next: teacher => {
-        this.teachers.update(list => [teacher, ...list]);
+      next: () => {
+        this.load();
         this.closePanel();
         this.isSubmitting.set(false);
       },
@@ -177,10 +189,7 @@ export class TeacherList implements OnInit {
   changeStatus(teacher: TeacherResponse, status: TeacherStatus): void {
     this.statusMenuFor.set(null);
     this.service.updateStatus(teacher.id, status).subscribe({
-      next: updated =>
-        this.teachers.update(list =>
-          list.map(t => t.id === updated.id ? updated : t)
-        ),
+      next: () => this.load(),
     });
   }
 
@@ -192,8 +201,7 @@ export class TeacherList implements OnInit {
     });
     if (!confirmed) return;
     this.service.delete(teacher.id).subscribe({
-      next: () =>
-        this.teachers.update(list => list.filter(t => t.id !== teacher.id)),
+      next: () => this.load(),
     });
   }
 

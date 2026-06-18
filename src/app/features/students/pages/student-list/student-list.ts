@@ -1,4 +1,4 @@
-import {ChangeDetectionStrategy, Component, computed, inject, signal} from '@angular/core';
+import {ChangeDetectionStrategy, Component, computed, inject, OnInit, signal} from '@angular/core';
 import {
   AbstractControl,
   FormBuilder,
@@ -14,6 +14,8 @@ import {StudentService} from '../../services/student.service';
 import {TokenService} from '../../../../core/auth/services/token.service';
 import {Router} from '@angular/router';
 import {ConfirmationService} from '../../../../shared/components/confirmation-modal/confirmation.service';
+import {PagedResponse} from '../../../../shared/models/paged-response.model';
+import {Paginator} from '../../../../shared/components/paginator/paginator';
 
 function passwordMatchValidator(control: AbstractControl): ValidationErrors | null {
   const pw  = control.get('password');
@@ -28,12 +30,13 @@ function passwordMatchValidator(control: AbstractControl): ValidationErrors | nu
     CommonModule,
     FormsModule,
     ReactiveFormsModule,
+    Paginator,
   ],
   templateUrl: './student-list.html',
   styleUrl: './student-list.css',
   changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class StudentList {
+export class StudentList implements OnInit {
   private readonly service = inject(StudentService);
   private readonly tokens  = inject(TokenService);
   private readonly fb      = inject(FormBuilder);
@@ -41,13 +44,16 @@ export class StudentList {
   private readonly confirm = inject(ConfirmationService);
 
   // ─── State ────────────────────────────────────────────────────────────────
-  readonly students     = signal<StudentResponse[]>([]);
-  readonly isLoading    = signal(true);
-  readonly isSubmitting = signal(false);
-  readonly panelOpen    = signal(false);
-  readonly searchQuery  = signal('');
-  readonly statusFilter = signal<StudentStatus | 'ALL'>('ALL');
-  readonly errorMessage = signal<string | null>(null);
+  readonly pagedResponse = signal<PagedResponse<StudentResponse> | null>(null);
+  readonly currentPage   = signal(0);
+  readonly pageSize      = signal(20);
+  readonly students      = computed(() => this.pagedResponse()?.content ?? []);
+  readonly isLoading     = signal(true);
+  readonly isSubmitting  = signal(false);
+  readonly panelOpen     = signal(false);
+  readonly searchQuery   = signal('');
+  readonly statusFilter  = signal<StudentStatus | 'ALL'>('ALL');
+  readonly errorMessage  = signal<string | null>(null);
 
   // Which student's status dropdown is open
   readonly statusMenuFor = signal<number | null>(null);
@@ -128,10 +134,15 @@ export class StudentList {
 
   load(): void {
     this.isLoading.set(true);
-    this.service.getAll().subscribe({
-      next:  list => { this.students.set(list); this.isLoading.set(false); },
+    this.service.getAll(this.currentPage(), this.pageSize()).subscribe({
+      next:  res => { this.pagedResponse.set(res); this.isLoading.set(false); },
       error: ()   => { this.isLoading.set(false); },
     });
+  }
+
+  goToPage(page: number): void {
+    this.currentPage.set(page);
+    this.load();
   }
 
   openCreate(): void {
@@ -165,10 +176,11 @@ export class StudentList {
     };
 
     this.service.create(payload).subscribe({
-      next: student => {
-        this.students.update(list => [student, ...list]);
+      next: () => {
         this.closePanel();
         this.isSubmitting.set(false);
+        this.currentPage.set(0);
+        this.load();
       },
       error: err => {
         this.errorMessage.set(err?.error?.message ?? 'Failed to create student');
@@ -180,10 +192,7 @@ export class StudentList {
   changeStatus(student: StudentResponse, status: StudentStatus): void {
     this.statusMenuFor.set(null);
     this.service.updateStatus(student.id, status).subscribe({
-      next: updated =>
-        this.students.update(list =>
-          list.map(s => s.id === updated.id ? updated : s)
-        ),
+      next: () => this.load(),
     });
   }
 
@@ -195,8 +204,7 @@ export class StudentList {
     });
     if (!confirmed) return;
     this.service.delete(student.id).subscribe({
-      next: () =>
-        this.students.update(list => list.filter(s => s.id !== student.id)),
+      next: () => this.load(),
     });
   }
 

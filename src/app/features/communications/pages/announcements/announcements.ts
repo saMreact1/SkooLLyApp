@@ -11,11 +11,13 @@ import {
   CommunicationFilters,
 } from '../../models/communication.models';
 import { ConfirmationService } from '../../../../shared/components/confirmation-modal';
+import { PagedResponse } from '../../../../shared/models/paged-response.model';
+import { Paginator } from '../../../../shared/components/paginator/paginator';
 
 @Component({
   selector: 'app-announcements',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, ReactiveFormsModule, Paginator],
   templateUrl: './announcements.html',
   styleUrl: './announcements.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -27,7 +29,10 @@ export class Announcements implements OnInit {
   private readonly router = inject(Router);
   private readonly confirm = inject(ConfirmationService);
 
-  readonly announcements = signal<Announcement[]>([]);
+  readonly pagedResponse = signal<PagedResponse<Announcement> | null>(null);
+  readonly currentPage = signal(0);
+  readonly pageSize = signal(20);
+  readonly announcements = computed(() => this.pagedResponse()?.content ?? []);
   readonly isLoading = signal(true);
   readonly errorMessage = signal<string | null>(null);
   readonly showFilters = signal(false);
@@ -98,17 +103,19 @@ export class Announcements implements OnInit {
     const isAdmin = ['ADMIN', 'SUPER_ADMIN'].includes(role || '');
 
     const obs = isAdmin
-      ? this.communicationService.getAllAnnouncements()
+      ? this.communicationService.getAllAnnouncements(this.currentPage(), this.pageSize())
       : this.communicationService.getVisibleAnnouncements(
           role === 'STUDENT' ? 'STUDENTS'
             : role === 'TEACHER' ? 'TEACHERS'
             : role === 'PARENT' ? 'PARENTS'
-            : 'ALL'
+            : 'ALL',
+          this.currentPage(),
+          this.pageSize()
         );
 
     obs.subscribe({
-      next: (list) => {
-        this.announcements.set(list);
+      next: (res) => {
+        this.pagedResponse.set(res);
         this.isLoading.set(false);
       },
       error: () => {
@@ -116,6 +123,11 @@ export class Announcements implements OnInit {
         this.isLoading.set(false);
       },
     });
+  }
+
+  goToPage(page: number): void {
+    this.currentPage.set(page);
+    this.loadAnnouncements();
   }
 
   refresh(): void {
@@ -146,7 +158,7 @@ export class Announcements implements OnInit {
 
     this.communicationService.deleteAnnouncement(announcement.id).subscribe({
       next: () => {
-        this.announcements.update(list => list.filter(a => a.id !== announcement.id));
+        this.loadAnnouncements();
       },
       error: () => {
         this.errorMessage.set('Failed to delete announcement');

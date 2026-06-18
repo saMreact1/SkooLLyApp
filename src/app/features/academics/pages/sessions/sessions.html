@@ -138,6 +138,10 @@
     </div>
   }
 
+  @if (pagedResponse()) {
+    <app-paginator [pageData]="pagedResponse()!" (goToPage)="goToPage($event)"/>
+  }
+
   <!-- Create session panel -->
   @if (panelOpen()) {
     <div class="panel-backdrop" (click)="closePanel()" aria-hidden="true"></div>
