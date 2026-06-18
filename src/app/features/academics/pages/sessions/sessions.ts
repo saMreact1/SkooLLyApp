@@ -6,6 +6,7 @@ import {SessionResponse, TermResponse} from '../../models/academic.model';
 import {ConfirmationService} from '../../../../shared/components/confirmation-modal/confirmation.service';
 import {PagedResponse} from '../../../../shared/models/paged-response.model';
 import {Paginator} from '../../../../shared/components/paginator/paginator';
+import {TokenService} from '../../../../core/auth/services/token.service';
 
 @Component({
   selector: 'app-sessions',
@@ -22,6 +23,7 @@ export class Sessions implements OnInit {
   private readonly academic = inject(AcademicService);
   private fb = inject(FormBuilder);
   private readonly confirm = inject(ConfirmationService);
+  private readonly tokens = inject(TokenService);
 
   readonly pagedResponse = signal<PagedResponse<SessionResponse> | null>(null);
   readonly currentPage = signal(0);
@@ -53,6 +55,11 @@ export class Sessions implements OnInit {
   readonly currentSession = computed<SessionResponse | null>(() =>
     this.sessions().find(s => s.isCurrent) ?? null
   );
+
+  readonly isAdmin = computed(() => {
+    const r = this.tokens.currentRole();
+    return r === 'ADMIN' || r === 'SUPER_ADMIN';
+  });
 
   ngOnInit() {
     this.loadSessions()
