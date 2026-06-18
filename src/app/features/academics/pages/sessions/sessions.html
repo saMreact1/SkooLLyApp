@@ -4,14 +4,16 @@
       <h1 class="page__title">Academic sessions</h1>
       <p class="page__sub">Manage school years and their terms</p>
     </div>
-    <button class="btn-primary" (click)="panelOpen.set(true)">
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="none"
-           stroke="currentColor" stroke-width="2.5" aria-hidden="true">
-        <line x1="12" y1="5" x2="12" y2="19"/>
-        <line x1="5" y1="12" x2="19" y2="12"/>
-      </svg>
-      New session
-    </button>
+    @if (isAdmin()) {
+      <button class="btn-primary" (click)="panelOpen.set(true)">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none"
+             stroke="currentColor" stroke-width="2.5" aria-hidden="true">
+          <line x1="12" y1="5" x2="12" y2="19"/>
+          <line x1="5" y1="12" x2="19" y2="12"/>
+        </svg>
+        New session
+      </button>
+    }
   </div>
 
   @if (currentSession()) {
@@ -41,9 +43,11 @@
       </svg>
       <p class="empty-state__text">No academic sessions yet</p>
       <p class="empty-state__sub">Create your first session to get started</p>
-      <button class="btn-primary" (click)="panelOpen.set(true)">
-        Create first session
-      </button>
+      @if (isAdmin()) {
+        <button class="btn-primary" (click)="panelOpen.set(true)">
+          Create first session
+        </button>
+      }
     </div>
   }
 
@@ -89,22 +93,24 @@
                   <div class="term-row__right">
                     @if (term.isCurrent) {
                       <span class="term-row__current">current</span>
-                    } @else {
+                    } @else if (isAdmin()) {
                       <button class="btn-ghost btn-ghost--xs"
                               (click)="setCurrentTerm(term)">
                         Set current
                       </button>
                     }
-                    <button class="icon-btn icon-btn--danger"
-                            (click)="deleteTerm(session.id, term)"
-                            [attr.aria-label]="'Delete ' + term.name">
-                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
-                           stroke="currentColor" stroke-width="2" aria-hidden="true">
-                        <polyline points="3 6 5 6 21 6"/>
-                        <path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/>
-                        <path d="M10 11v6M14 11v6"/>
-                      </svg>
-                    </button>
+                    @if (isAdmin()) {
+                      <button class="icon-btn icon-btn--danger"
+                              (click)="deleteTerm(session.id, term)"
+                              [attr.aria-label]="'Delete ' + term.name">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
+                             stroke="currentColor" stroke-width="2" aria-hidden="true">
+                          <polyline points="3 6 5 6 21 6"/>
+                          <path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/>
+                          <path d="M10 11v6M14 11v6"/>
+                        </svg>
+                      </button>
+                    }
                   </div>
                 </div>
               }
@@ -112,26 +118,28 @@
           </div>
 
           <div class="session-card__actions">
-            <button class="btn-ghost" (click)="openTermPanel(session)">
-              + Add term
-            </button>
-            @if (!session.isCurrent) {
-              <button class="btn-ghost btn-ghost--primary"
-                      (click)="setCurrentSession(session)">
-                Set as current
+            @if (isAdmin()) {
+              <button class="btn-ghost" (click)="openTermPanel(session)">
+                + Add term
+              </button>
+              @if (!session.isCurrent) {
+                <button class="btn-ghost btn-ghost--primary"
+                        (click)="setCurrentSession(session)">
+                  Set as current
+                </button>
+              }
+              <button class="icon-btn icon-btn--danger"
+                      (click)="deleteSession(session)"
+                      aria-label="Delete session"
+                      style="margin-left: auto">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                     stroke="currentColor" stroke-width="2" aria-hidden="true">
+                  <polyline points="3 6 5 6 21 6"/>
+                  <path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/>
+                  <path d="M10 11v6M14 11v6"/>
+                </svg>
               </button>
             }
-            <button class="icon-btn icon-btn--danger"
-                    (click)="deleteSession(session)"
-                    aria-label="Delete session"
-                    style="margin-left: auto">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
-                   stroke="currentColor" stroke-width="2" aria-hidden="true">
-                <polyline points="3 6 5 6 21 6"/>
-                <path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/>
-                <path d="M10 11v6M14 11v6"/>
-              </svg>
-            </button>
           </div>
         </div>
       }
@@ -139,7 +147,7 @@
   }
 
   <!-- Create session panel -->
-  @if (panelOpen()) {
+  @if (isAdmin() && panelOpen()) {
     <div class="panel-backdrop" (click)="closePanel()" aria-hidden="true"></div>
     <aside class="panel" role="dialog" aria-modal="true"
            aria-label="Create academic session">
@@ -194,7 +202,7 @@
   }
 
   <!-- Add term panel -->
-  @if (termPanelFor()) {
+  @if (isAdmin() && termPanelFor()) {
     <div class="panel-backdrop" (click)="closePanel()" aria-hidden="true"></div>
     <aside class="panel" role="dialog" aria-modal="true" aria-label="Add term">
       <div class="panel__header">

@@ -4,6 +4,7 @@ import {FormBuilder, ReactiveFormsModule, Validators} from '@angular/forms';
 import {AcademicService} from '../../services/academic.service';
 import {SessionResponse, TermResponse} from '../../models/academic.model';
 import {ConfirmationService} from '../../../../shared/components/confirmation-modal/confirmation.service';
+import {TokenService} from '../../../../core/auth/services/token.service';
 
 @Component({
   selector: 'app-sessions',
@@ -19,6 +20,7 @@ export class Sessions implements OnInit {
   private readonly academic = inject(AcademicService);
   private fb = inject(FormBuilder);
   private readonly confirm = inject(ConfirmationService);
+  private readonly tokens = inject(TokenService);
 
   readonly sessions = signal<SessionResponse[]>([]);
   readonly isLoading = signal(true);
@@ -46,6 +48,11 @@ export class Sessions implements OnInit {
   readonly currentSession = computed<SessionResponse | null>(() =>
     this.sessions().find(s => s.isCurrent) ?? null
   );
+
+  readonly isAdmin = computed(() => {
+    const r = this.tokens.currentRole();
+    return r === 'ADMIN' || r === 'SUPER_ADMIN';
+  });
 
   ngOnInit() {
     this.loadSessions()
