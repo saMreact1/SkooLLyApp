@@ -46,6 +46,13 @@ export const DASHBOARD_ROUTES: Routes = [
         loadChildren: () =>
           import('../communications/communication.routes').then(m => m.COMMUNICATION_ROUTES),
       },
+      {
+        path: 'attendance',
+        canActivate: [roleGuard],
+        data: { roles: ['SUPER_ADMIN', 'ADMIN', 'TEACHER'] },
+        loadChildren: () =>
+          import('../attendance/attendance.routes').then(m => m.ATTENDANCE_ROUTES),
+      },
       // {
       //   path: 'examinations',
       //   loadChildren: () =>

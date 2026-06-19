@@ -104,6 +104,17 @@
             <span class="stat-card__value">{{ totalSubjects() }}</span>
           </div>
         </div>
+        <div class="stat-card stat-card--green">
+          <div class="stat-card__icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+          </div>
+          <div class="stat-card__content">
+            <span class="stat-card__label">Present Today</span>
+            <span class="stat-card__value">{{ presentTodayCount() }}<span class="stat-card__suffix">/{{ totalMarkedToday() }}</span></span>
+          </div>
+        </div>
       </div>
 
       <!-- Session banner -->
@@ -156,6 +167,34 @@
               </ul>
             }
           </div>
+          <!-- Attendance overview -->
+          @if (todayClassroomAttendance().length > 0) {
+            <div class="card">
+              <div class="card__header">
+                <h2 class="card__title">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" style="margin-right:6px;vertical-align:-2px">
+                    <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                  </svg>
+                  Today's Attendance
+                </h2>
+                <a routerLink="/app/attendance" class="card__link">View all</a>
+              </div>
+              <div class="attendance-summary-list">
+                @for (cls of todayClassroomAttendance(); track cls.classroomId) {
+                  <div class="attendance-summary-row">
+                    <span class="attendance-summary-row__name">{{ cls.classroomName }}</span>
+                    <div class="attendance-bar">
+                      <div class="attendance-bar__fill"
+                           [class]="attendanceBarColor(attendancePercent(cls.present, cls.total))"
+                           [style.width.%]="attendancePercent(cls.present, cls.total)">
+                      </div>
+                    </div>
+                    <span class="attendance-summary-row__pct">{{ attendancePercent(cls.present, cls.total) }}%</span>
+                  </div>
+                }
+              </div>
+            </div>
+          }
           <!-- Subjects -->
           <div class="card">
             <div class="card__header">
@@ -346,6 +385,37 @@
           </div>
         </div>
 
+        <!-- Attendance Overview (teacher) -->
+        @if (todayClassroomAttendance().length > 0) {
+          <div class="dashboard__col">
+            <div class="card">
+              <div class="card__header">
+                <h2 class="card__title">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" style="margin-right:6px;vertical-align:-2px">
+                    <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                  </svg>
+                  Today's Attendance
+                </h2>
+                <a routerLink="/app/attendance" class="card__link">View all</a>
+              </div>
+              <div class="attendance-summary-list">
+                @for (cls of todayClassroomAttendance(); track cls.classroomId) {
+                  <div class="attendance-summary-row">
+                    <span class="attendance-summary-row__name">{{ cls.classroomName }}</span>
+                    <div class="attendance-bar">
+                      <div class="attendance-bar__fill"
+                           [class]="attendanceBarColor(attendancePercent(cls.present, cls.total))"
+                           [style.width.%]="attendancePercent(cls.present, cls.total)">
+                      </div>
+                    </div>
+                    <span class="attendance-summary-row__pct">{{ attendancePercent(cls.present, cls.total) }}%</span>
+                  </div>
+                }
+              </div>
+            </div>
+          </div>
+        }
+
         <!-- Notice Board (wider) -->
         <div class="dashboard__col dashboard__col--wide">
           <div class="card card--notice">
@@ -477,6 +547,51 @@
             }
           </div>
         </div>
+
+        <!-- My Attendance (student) -->
+        @if (studentAttendanceSummary()) {
+          <div class="dashboard__col">
+            <div class="card">
+              <div class="card__header">
+                <h2 class="card__title">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" style="margin-right:6px;vertical-align:-2px">
+                    <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                  </svg>
+                  My Attendance
+                </h2>
+                <a routerLink="/app/attendance" class="card__link">Details</a>
+              </div>
+              <div class="student-attendance-stats">
+                <div class="student-attendance-stats__item student-attendance-stats__item--green">
+                  <span class="student-attendance-stats__value">{{ studentAttendanceSummary()!.presentDays }}</span>
+                  <span class="student-attendance-stats__label">Present</span>
+                </div>
+                <div class="student-attendance-stats__item student-attendance-stats__item--red">
+                  <span class="student-attendance-stats__value">{{ studentAttendanceSummary()!.absentDays }}</span>
+                  <span class="student-attendance-stats__label">Absent</span>
+                </div>
+                <div class="student-attendance-stats__item student-attendance-stats__item--amber">
+                  <span class="student-attendance-stats__value">{{ studentAttendanceSummary()!.lateDays }}</span>
+                  <span class="student-attendance-stats__label">Late</span>
+                </div>
+                <div class="student-attendance-stats__item student-attendance-stats__item--slate">
+                  <span class="student-attendance-stats__value">{{ studentAttendanceSummary()!.excusedDays }}</span>
+                  <span class="student-attendance-stats__label">Excused</span>
+                </div>
+              </div>
+              <div class="student-attendance-rate">
+                <span class="student-attendance-rate__label">Attendance Rate</span>
+                <div class="attendance-bar attendance-bar--lg">
+                  <div class="attendance-bar__fill"
+                       [class]="attendanceBarColor(studentAttendanceSummary()!.percentage)"
+                       [style.width.%]="studentAttendanceSummary()!.percentage">
+                  </div>
+                </div>
+                <span class="student-attendance-rate__pct">{{ studentAttendanceSummary()!.percentage | number:'1.1-1' }}%</span>
+              </div>
+            </div>
+          </div>
+        }
 
         <!-- Notice Board (wider) -->
         <div class="dashboard__col dashboard__col--wide">

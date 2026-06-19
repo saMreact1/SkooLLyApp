@@ -1,18 +1,20 @@
 import {ChangeDetectionStrategy, Component, inject, OnInit, signal, computed} from '@angular/core';
 import {CommonModule} from '@angular/common';
 import {RouterLink} from '@angular/router';
-import {forkJoin, of} from 'rxjs';
-import {catchError} from 'rxjs/operators';
+import {forkJoin, of, Observable} from 'rxjs';
+import {catchError, map} from 'rxjs/operators';
 import {AuthService} from '../../../../core/auth/services/auth.service';
 import {TokenService} from '../../../../core/auth/services/token.service';
 import {StudentService} from '../../../students/services/student.service';
 import {TeacherService} from '../../../teachers/services/teacher.service';
 import {AcademicService} from '../../../academics/services/academic.service';
 import {CommunicationService} from '../../../communications/services/communication.service';
+import {AttendanceService} from '../../../attendance/services/attendance.service';
 import {StudentResponse} from '../../../students/models/student.models';
 import {TeacherResponse} from '../../../teachers/models/teacher.models';
 import {SessionResponse, TermResponse, SubjectResponse, TimetableResponse, DayOfWeek, ClassroomResponse} from '../../../academics/models/academic.model';
 import {Announcement} from '../../../communications/models/communication.models';
+import {AttendanceSummaryResponse} from '../../../attendance/models/attendance.models';
 
 @Component({
   selector: 'app-admin',
@@ -28,6 +30,7 @@ export class Admin implements OnInit {
   private readonly teacherService = inject(TeacherService);
   private readonly academicService = inject(AcademicService);
   private readonly communicationService = inject(CommunicationService);
+  private readonly attendanceService = inject(AttendanceService);
 
   readonly currentUser = this.auth.currentUser;
   readonly isLoading = signal(true);
@@ -55,6 +58,12 @@ export class Admin implements OnInit {
   // Session/term
   readonly currentSession = signal<SessionResponse | null>(null);
   readonly currentTerm = signal<TermResponse | null>(null);
+
+  // Attendance overview
+  readonly todayClassroomAttendance = signal<{classroomId: number, classroomName: string, present: number, absent: number, late: number, excused: number, total: number}[]>([]);
+  readonly studentAttendanceSummary = signal<AttendanceSummaryResponse | null>(null);
+  readonly presentTodayCount = computed(() => this.todayClassroomAttendance().reduce((sum, c) => sum + c.present, 0));
+  readonly totalMarkedToday = computed(() => this.todayClassroomAttendance().reduce((sum, c) => sum + c.total, 0));
 
   // Today's timetable (student / teacher)
   readonly todayTimetable = signal<TimetableResponse[]>([]);
@@ -108,6 +117,7 @@ export class Admin implements OnInit {
           this.currentSession.set(d.currentSession);
           this.currentTerm.set(d.currentTerm);
           this.isLoading.set(false);
+          this.loadAttendanceOverview();
         },
         error: () => this.isLoading.set(false),
       });
@@ -126,6 +136,7 @@ export class Admin implements OnInit {
           this.currentSession.set(d.currentSession);
           this.currentTerm.set(d.currentTerm);
           this.isLoading.set(false);
+          this.loadAttendanceOverview();
           if (d.currentTerm) {
             this.loadTeacherTimetable(d.currentTerm.id);
           }
@@ -144,8 +155,11 @@ export class Admin implements OnInit {
           this.currentSession.set(d.currentSession);
           this.currentTerm.set(d.currentTerm);
           this.isLoading.set(false);
-          if (d.currentTerm && this.isStudent()) {
-            this.loadStudentTimetable(d.currentTerm.id);
+          if (this.isStudent()) {
+            this.loadStudentAttendance();
+            if (d.currentTerm) {
+              this.loadStudentTimetable(d.currentTerm.id);
+            }
           }
         },
         error: () => this.isLoading.set(false),
@@ -217,6 +231,59 @@ export class Admin implements OnInit {
     });
   }
 
+  private loadAttendanceOverview(): void {
+    const today = new Date().toISOString().split('T')[0];
+    this.academicService.getClassrooms(0, 20).pipe(
+      catchError(() => of({ content: [] } as any)),
+    ).subscribe({
+      next: res => {
+        const classrooms = res.content;
+        if (!classrooms || classrooms.length === 0) return;
+
+        const calls = classrooms.map((c: any) =>
+          this.attendanceService.getAttendanceByClassroom(c.id, today, 0, 500).pipe(
+            catchError(() => of({ content: [] })),
+            map((attRes: any) => ({
+              classroomId: c.id,
+              classroomName: `${c.name} ${c.section}`,
+              records: attRes.content,
+            })),
+          )
+        );
+
+        forkJoin(calls as Observable<any>[]).subscribe({
+          next: results => {
+            const processed = results.map((r: any) => ({
+              classroomId: r.classroomId,
+              classroomName: r.classroomName,
+              present: r.records.filter((x: any) => x.status === 'PRESENT').length,
+              absent: r.records.filter((x: any) => x.status === 'ABSENT').length,
+              late: r.records.filter((x: any) => x.status === 'LATE').length,
+              excused: r.records.filter((x: any) => x.status === 'EXCUSED' || x.status === 'HALF_DAY').length,
+              total: r.records.length,
+            }));
+            this.todayClassroomAttendance.set(processed);
+          },
+        });
+      },
+    });
+  }
+
+  private loadStudentAttendance(): void {
+    this.studentService.getMyProfile().pipe(
+      catchError(() => of(null)),
+    ).subscribe({
+      next: student => {
+        if (!student || !this.currentTerm()) return;
+        this.attendanceService.getStudentSummary(student.id, this.currentTerm()!.id).pipe(
+          catchError(() => of(null)),
+        ).subscribe({
+          next: summary => this.studentAttendanceSummary.set(summary),
+        });
+      },
+    });
+  }
+
   fullName(firstName: string, lastName: string): string {
     return `${firstName} ${lastName}`;
   }
@@ -279,5 +346,15 @@ export class Admin implements OnInit {
 
   formatDayOfWeek(day: DayOfWeek | string): string {
     return day.charAt(0) + day.slice(1).toLowerCase();
+  }
+
+  attendancePercent(present: number, total: number): number {
+    return total > 0 ? Math.round((present / total) * 100) : 0;
+  }
+
+  attendanceBarColor(percent: number): string {
+    if (percent >= 80) return 'bar--green';
+    if (percent >= 50) return 'bar--amber';
+    return 'bar--red';
   }
 }
