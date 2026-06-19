@@ -82,11 +82,13 @@
 .stat-card--purple .stat-card__icon { background: #EEEDFE; color: #534AB7; }
 .stat-card--amber  .stat-card__icon { background: #FAEEDA; color: #BA7517; }
 .stat-card--coral  .stat-card__icon { background: #FAECE7; color: #993C1D; }
+.stat-card--green  .stat-card__icon { background: #E1F5EE; color: #1D9E75; }
 
 [data-theme='dark'] .stat-card--teal   .stat-card__icon { background: #0d2e24; color: #2eb88a; }
 [data-theme='dark'] .stat-card--purple .stat-card__icon { background: #1e1a3d; color: #9b93e8; }
 [data-theme='dark'] .stat-card--amber  .stat-card__icon { background: #2e2410; color: #e8b04a; }
 [data-theme='dark'] .stat-card--coral  .stat-card__icon { background: #2e1810; color: #d97a5c; }
+[data-theme='dark'] .stat-card--green  .stat-card__icon { background: #0d2e24; color: #2eb88a; }
 
 .stat-card__content { display: flex; flex-direction: column; gap: 2px; }
 
@@ -96,6 +98,9 @@
 }
 .stat-card__value {
   font-size: 24px; font-weight: 700; color: var(--text-primary); line-height: 1;
+}
+.stat-card__suffix {
+  font-size: 14px; font-weight: 500; color: var(--text-muted);
 }
 
 /* Session banner */
@@ -331,3 +336,123 @@
 .quick-link:hover { background: var(--bg-surface-hover); color: var(--text-primary); }
 .quick-link svg { color: var(--text-muted); flex-shrink: 0; transition: color 0.12s; }
 .quick-link:hover svg { color: var(--accent); }
+
+/* Attendance summary list */
+.attendance-summary-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.attendance-summary-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.attendance-summary-row__name {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-primary);
+  min-width: 72px;
+}
+
+.attendance-bar {
+  flex: 1;
+  height: 8px;
+  background: var(--bg-muted);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.attendance-bar--lg {
+  height: 10px;
+  border-radius: 5px;
+}
+
+.attendance-bar__fill {
+  height: 100%;
+  border-radius: inherit;
+  transition: width 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.bar--green { background: var(--accent); }
+.bar--amber { background: #e8a735; }
+.bar--red   { background: #dc5a4a; }
+
+[data-theme='dark'] .bar--green { background: #4ade80; }
+[data-theme='dark'] .bar--amber { background: #fbbf24; }
+[data-theme='dark'] .bar--red   { background: #f87171; }
+
+.attendance-summary-row__pct {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+  min-width: 36px;
+  text-align: right;
+}
+
+/* Student attendance stats */
+.student-attendance-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.student-attendance-stats__item {
+  text-align: center;
+  padding: 10px 4px;
+  border-radius: 8px;
+  transition: background 0.3s;
+}
+
+.student-attendance-stats__item--green {
+  background: rgba(74, 222, 128, 0.12);
+}
+.student-attendance-stats__item--red {
+  background: rgba(248, 113, 113, 0.12);
+}
+.student-attendance-stats__item--amber {
+  background: rgba(251, 191, 36, 0.12);
+}
+.student-attendance-stats__item--slate {
+  background: var(--bg-muted);
+}
+
+.student-attendance-stats__value {
+  display: block;
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1.2;
+}
+
+.student-attendance-stats__label {
+  display: block;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+.student-attendance-rate {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.student-attendance-rate__label {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.student-attendance-rate__pct {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-primary);
+  min-width: 40px;
+  text-align: right;
+}

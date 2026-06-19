@@ -1,0 +1,294 @@
+<div class="page">
+  <div class="page__header">
+    <div>
+      <h1 class="page__title">Attendance</h1>
+      <p class="page__sub">
+        @if (selectedClassroom()) {
+          {{ selectedClassroom()!.name }} {{ selectedClassroom()!.section }}
+          · {{ students().length }} student{{ students().length !== 1 ? 's' : '' }}
+          · {{ formatDate(selectedDate()) }}
+        } @else {
+          Select a class to mark attendance
+        }
+      </p>
+    </div>
+    @if (successMessage()) {
+      <div class="toast toast--success" role="status">{{ successMessage() }}</div>
+    }
+  </div>
+
+  <!-- Toolbar -->
+  <div class="toolbar">
+    <div class="toolbar__group">
+      <div class="toolbar__field">
+        <label class="toolbar__label" for="classSelect">Class</label>
+        <select
+          id="classSelect"
+          class="toolbar__select"
+          [ngModel]="selectedClassroomId()"
+          (ngModelChange)="onClassroomSelect($event)"
+        >
+          <option [ngValue]="null" disabled>Select a class</option>
+          @for (cls of classrooms(); track cls.id) {
+            <option [ngValue]="cls.id">{{ cls.name }} {{ cls.section }}</option>
+          }
+        </select>
+      </div>
+
+      <div class="toolbar__field">
+        <label class="toolbar__label" for="datePicker">Date</label>
+        <input
+          id="datePicker"
+          type="date"
+          class="toolbar__input"
+          [ngModel]="selectedDate()"
+          (ngModelChange)="onDateChange($event)"
+          [max]="today"
+        />
+      </div>
+    </div>
+
+    @if (currentSession() && currentTerm()) {
+      <div class="toolbar__context">
+        <span class="context-badge">{{ currentSession()!.name }}</span>
+        <span class="context-badge context-badge--term">{{ currentTerm()!.name }}</span>
+      </div>
+    }
+  </div>
+
+  @if (!selectedClassroomId()) {
+    <div class="empty-state">
+      <svg width="44" height="44" viewBox="0 0 24 24" fill="none"
+           stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+        <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+        <path d="M12 12l-2 2m0 0l-2 2m2-2l2 2m-2-2l2-2"/>
+      </svg>
+      <p class="empty-state__text">Select a class to view attendance</p>
+      <p class="empty-state__sub">Choose a class and date to start marking attendance</p>
+    </div>
+  } @else if (isLoading()) {
+    <div class="table-skeleton" aria-label="Loading">
+      @for (i of [1,2,3,4,5,6]; track i) {
+        <div class="table-skeleton__row"></div>
+      }
+    </div>
+  } @else {
+    <!-- Summary Cards -->
+    @if (students().length > 0) {
+      <div class="summary-cards">
+        <div class="summary-card summary-card--present">
+          <span class="summary-card__icon">✓</span>
+          <div class="summary-card__body">
+            <span class="summary-card__value">{{ stats().present }}</span>
+            <span class="summary-card__label">Present</span>
+          </div>
+        </div>
+        <div class="summary-card summary-card--absent">
+          <span class="summary-card__icon">✕</span>
+          <div class="summary-card__body">
+            <span class="summary-card__value">{{ stats().absent }}</span>
+            <span class="summary-card__label">Absent</span>
+          </div>
+        </div>
+        <div class="summary-card summary-card--late">
+          <span class="summary-card__icon">⏰</span>
+          <div class="summary-card__body">
+            <span class="summary-card__value">{{ stats().late }}</span>
+            <span class="summary-card__label">Late</span>
+          </div>
+        </div>
+        <div class="summary-card summary-card--excused">
+          <span class="summary-card__icon">📝</span>
+          <div class="summary-card__body">
+            <span class="summary-card__value">{{ stats().excused }}</span>
+            <span class="summary-card__label">Excused</span>
+          </div>
+        </div>
+        <div class="summary-card summary-card--half-day">
+          <span class="summary-card__icon">½</span>
+          <div class="summary-card__body">
+            <span class="summary-card__value">{{ stats().halfDay }}</span>
+            <span class="summary-card__label">Half day</span>
+          </div>
+        </div>
+        <div class="summary-card summary-card--total">
+          <span class="summary-card__icon">📊</span>
+          <div class="summary-card__body">
+            <span class="summary-card__value">{{ stats().marked }}/{{ stats().total }}</span>
+            <span class="summary-card__label">Marked</span>
+          </div>
+        </div>
+      </div>
+    }
+
+    <!-- Term summary -->
+    @if (showSummary() && summary(); as s) {
+      <div class="term-summary">
+        <div class="term-summary__stat">
+          <span class="term-summary__value">{{ s.totalDays }}</span>
+          <span class="term-summary__label">Total days</span>
+        </div>
+        <div class="term-summary__stat">
+          <span class="term-summary__value" style="color: var(--accent)">{{ s.percentage }}%</span>
+          <span class="term-summary__label">Attendance rate</span>
+        </div>
+        <div class="term-summary__stat">
+          <span class="term-summary__value">{{ s.presentDays }}</span>
+          <span class="term-summary__label">Present</span>
+        </div>
+        <div class="term-summary__stat">
+          <span class="term-summary__value" style="color: var(--danger)">{{ s.absentDays }}</span>
+          <span class="term-summary__label">Absent</span>
+        </div>
+      </div>
+    }
+
+    <!-- Bulk actions bar -->
+    @if (isTeacher() && students().length > 0) {
+      <div class="bulk-bar">
+        <div class="bulk-bar__left">
+          <span class="bulk-bar__hint">
+            {{ stats().marked === 0 ? 'No attendance marked yet' : stats().marked + ' student' + (stats().marked !== 1 ? 's' : '') + ' marked' }}
+          </span>
+        </div>
+        <div class="bulk-bar__right">
+          <div class="mark-all-wrap">
+            <button class="btn-ghost" (click)="showMarkAllMenu.set(!showMarkAllMenu())"
+                    [class.btn-ghost--active]="showMarkAllMenu()">
+              Mark all
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none"
+                   stroke="currentColor" stroke-width="2.5" aria-hidden="true">
+                <polyline points="6 9 12 15 18 9"/>
+              </svg>
+            </button>
+            @if (showMarkAllMenu()) {
+              <div class="mark-all-menu">
+                @for (opt of markAllOptions; track opt.value) {
+                  <button class="mark-all-menu__item" (click)="markAll(opt.value); showMarkAllMenu.set(false)">
+                    {{ opt.label }}
+                  </button>
+                }
+              </div>
+            }
+          </div>
+
+          <button class="btn-primary" (click)="saveAttendance()" [disabled]="isSaving() || stats().marked === 0">
+            @if (isSaving()) {
+              <span class="spinner" aria-hidden="true"></span>
+              Saving...
+            } @else {
+              Save attendance
+            }
+          </button>
+        </div>
+      </div>
+    }
+
+    <!-- Attendance table -->
+    @if (students().length === 0) {
+      <div class="empty-state">
+        <p class="empty-state__text">No students found for this class</p>
+        <p class="empty-state__sub">Register students first to mark attendance</p>
+      </div>
+    } @else {
+      <div class="table-wrap">
+        <table class="table" aria-label="Attendance list">
+          <thead>
+            <tr>
+              <th>Student</th>
+              <th>Admission no.</th>
+              <th>
+                <span class="th-status">
+                  Status
+                  @if (!allMarked()) {
+                    <span class="th-status__dot" aria-hidden="true"></span>
+                  }
+                </span>
+              </th>
+              @if (isTeacher()) {
+                <th>Check-in</th>
+                <th class="table__actions-col">Remark</th>
+              }
+            </tr>
+          </thead>
+          <tbody>
+            @for (student of students(); track student.id) {
+              <tr class="table__row"
+                  [class.table__row--marked]="student.attStatus !== undefined">
+                <td class="table__student-cell">
+                  <div class="student-avatar" aria-hidden="true">
+                    {{ initials(student) }}
+                  </div>
+                  <div class="student-info">
+                    <span class="student-info__name">{{ fullName(student) }}</span>
+                    <span class="student-info__email">{{ student.email }}</span>
+                  </div>
+                </td>
+
+                <td>
+                  <code class="code-pill">{{ student.admissionNumber }}</code>
+                </td>
+
+                <!-- Status selector -->
+                <td>
+                  <div class="status-cell">
+                    @if (isTeacher()) {
+                      <select
+                        class="status-select"
+                        [class]="'status-select--' + (student.attStatus || 'unset')"
+                        [ngModel]="student.attStatus || ''"
+                        (ngModelChange)="setStatus(student.id, $event)"
+                      >
+                        <option value="" disabled>—</option>
+                        @for (opt of statusOptions; track opt.value) {
+                          <option [value]="opt.value">{{ opt.label }}</option>
+                        }
+                      </select>
+                    } @else {
+                      @if (student.attStatus) {
+                        <span class="badge" [class]="statusClass(student.attStatus)">
+                          {{ statusIcon(student.attStatus) }} {{ statusLabel(student.attStatus) }}
+                        </span>
+                      } @else {
+                        <span class="text-muted">—</span>
+                      }
+                    }
+                  </div>
+                </td>
+
+                @if (isTeacher()) {
+                  <td>
+                    @if (student.attStatus === 'PRESENT' || student.attStatus === 'LATE') {
+                      <input
+                        type="time"
+                        class="time-input"
+                        [ngModel]="student.checkInTime || ''"
+                        (ngModelChange)="updateDirtyCount()"
+                        placeholder="--:--"
+                      />
+                    } @else {
+                      <span class="text-muted">—</span>
+                    }
+                  </td>
+
+                  <td class="table__actions">
+                    @if (student.attStatus) {
+                      <input
+                        type="text"
+                        class="remark-input"
+                        placeholder="Optional note"
+                        [ngModel]="student.remark || ''"
+                        (ngModelChange)="updateDirtyCount()"
+                      />
+                    }
+                  </td>
+                }
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      <p class="result-count">{{ students().length }} student{{ students().length !== 1 ? 's' : '' }}</p>
+    }
+  }
+</div>
