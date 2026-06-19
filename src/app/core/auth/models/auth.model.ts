@@ -57,7 +57,6 @@ export interface CompleteRegistrationRequest {
   // Student fields
   admissionDate?: string;
   currentClass?: string;
-  currentSection?: string;
   emergencyContactName?: string;
   emergencyContactPhone?: string;
   emergencyContactRelationship?: string;

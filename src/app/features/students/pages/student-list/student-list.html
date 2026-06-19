@@ -3,8 +3,12 @@
     <div>
       <h1 class="page__title">Students</h1>
       <p class="page__sub">
-        {{ students().length }} enrolled
-        · {{ totalActive() }} active
+        @if (selectedClass()) {
+          {{ students().length }} enrolled
+          · {{ totalActive() }} active
+        } @else {
+          Select a class to view students
+        }
       </p>
     </div>
     @if (isAdmin()) {
@@ -19,8 +23,23 @@
     }
   </div>
 
-  <!-- Toolbar: search + status filter -->
+  <!-- Toolbar: class selector + search + status filter -->
   <div class="toolbar">
+    <div class="class-select-wrap">
+      <label class="class-select-label" for="classFilter">Class</label>
+      <select
+        id="classFilter"
+        class="class-select"
+        [ngModel]="selectedClass()"
+        (ngModelChange)="onClassSelect($event)"
+      >
+        <option [value]="null" disabled>Select a class</option>
+        @for (cls of classrooms(); track cls.id) {
+          <option [value]="cls.name">{{ cls.name }} - {{ cls.section }}</option>
+        }
+      </select>
+    </div>
+
     <div class="search-wrap">
       <svg class="search-wrap__icon" width="15" height="15" viewBox="0 0 24 24"
            fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
@@ -30,10 +49,11 @@
       <input
         type="search"
         class="search-wrap__input"
-        placeholder="Search name, admission no., class..."
+        placeholder="Search name, admission no..."
         [ngModel]="searchQuery()"
         (ngModelChange)="searchQuery.set($event)"
         aria-label="Search students"
+        [disabled]="!selectedClass()"
       />
     </div>
 
@@ -42,19 +62,34 @@
         class="filter-tab"
         [class.filter-tab--active]="statusFilter() === 'ALL'"
         (click)="statusFilter.set('ALL')"
+        [disabled]="!selectedClass()"
       >All</button>
       @for (opt of statusOptions; track opt.value) {
         <button
           class="filter-tab"
           [class.filter-tab--active]="statusFilter() === opt.value"
           (click)="statusFilter.set(opt.value)"
+          [disabled]="!selectedClass()"
         >{{ opt.label }}</button>
       }
     </div>
   </div>
 
-  <!-- Loading skeleton -->
-  @if (isLoading()) {
+  @if (!selectedClass()) {
+    <div class="empty-state">
+      <svg width="44" height="44" viewBox="0 0 24 24" fill="none"
+           stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+        <circle cx="9" cy="7" r="4"/>
+        <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+        <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+      </svg>
+      <p class="empty-state__text">Select a class to view students</p>
+      <p class="empty-state__sub">Choose a class from the dropdown above to see enrolled students</p>
+    </div>
+  }
+
+  @else if (isLoading()) {
     <div class="table-skeleton" aria-label="Loading students">
       @for (i of [1,2,3,4,5,6]; track i) {
         <div class="table-skeleton__row"></div>
@@ -74,10 +109,10 @@
       <p class="empty-state__text">
         {{ searchQuery() || statusFilter() !== 'ALL'
         ? 'No students match your filters'
-        : 'No students registered yet' }}
+        : 'No students in this class yet' }}
       </p>
       @if (!searchQuery() && statusFilter() === 'ALL' && isAdmin()) {
-        <p class="empty-state__sub">Register the first student to get started</p>
+        <p class="empty-state__sub">Register the first student for this class</p>
         <button class="btn-primary" (click)="openCreate()">
           Register student
         </button>
@@ -93,7 +128,6 @@
           <th>Student</th>
           <th>Admission no.</th>
           <th>Class</th>
-          <th>Section</th>
           <th>Status</th>
           <th>Admitted</th>
           <th class="table__actions-col">Actions</th>
@@ -122,7 +156,6 @@
               </td>
 
               <td class="table__cell">{{ student.currentClass }}</td>
-              <td class="table__cell">{{ student.currentSection }}</td>
 
               <!-- Status badge + dropdown -->
               <td (click)="$event.stopPropagation()">
@@ -201,9 +234,7 @@
         </tbody>
       </table>
     </div>
-    @if (pagedResponse()) {
-      <app-paginator [pageData]="pagedResponse()!" (goToPage)="goToPage($event)"/>
-    }
+    <p class="result-count">{{ filtered().length }} student{{ filtered().length !== 1 ? 's' : '' }}</p>
   }
 
   <!-- ── Create student panel ────────────────────────────────────────────── -->
@@ -346,17 +377,13 @@
         <div class="field-row">
           <div class="field" [class.field--error]="f.currentClass.invalid && f.currentClass.touched">
             <label class="field__label">Class</label>
-            <input type="text" formControlName="currentClass"
-                   class="field__input" placeholder="e.g. JSS1"/>
+            <select formControlName="currentClass" class="field__input">
+              <option value="" disabled>Select a class</option>
+              @for (cls of classrooms(); track cls.id) {
+                <option [value]="cls.name">{{ cls.name }}</option>
+              }
+            </select>
             @if (f.currentClass.invalid && f.currentClass.touched) {
-              <span class="field__error">Required</span>
-            }
-          </div>
-          <div class="field" [class.field--error]="f.currentSection.invalid && f.currentSection.touched">
-            <label class="field__label">Section</label>
-            <input type="text" formControlName="currentSection"
-                   class="field__input" placeholder="e.g. A"/>
-            @if (f.currentSection.invalid && f.currentSection.touched) {
               <span class="field__error">Required</span>
             }
           </div>

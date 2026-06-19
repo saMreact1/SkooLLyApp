@@ -2,10 +2,13 @@ import {ChangeDetectionStrategy, Component, computed, inject, OnInit, signal} fr
 import {CommonModule} from '@angular/common';
 import {FormBuilder, FormsModule, ReactiveFormsModule, Validators} from '@angular/forms';
 import {AcademicService} from '../../services/academic.service';
-import {SubjectResponse} from '../../models/academic.model';
+import {SubjectResponse, StudentSubjectResponse} from '../../models/academic.model';
 import {ConfirmationService} from '../../../../shared/components/confirmation-modal/confirmation.service';
 import {PagedResponse} from '../../../../shared/models/paged-response.model';
 import {Paginator} from '../../../../shared/components/paginator/paginator';
+import {TokenService} from '../../../../core/auth/services/token.service';
+import {StudentService} from '../../../students/services/student.service';
+import {catchError, of} from 'rxjs';
 
 @Component({
   selector: 'app-subjects',
@@ -23,6 +26,28 @@ export class Subjects implements OnInit {
   private readonly academic = inject(AcademicService);
   private readonly fb       = inject(FormBuilder);
   private readonly confirm  = inject(ConfirmationService);
+  private readonly token    = inject(TokenService);
+  private readonly studentSrv = inject(StudentService);
+
+  readonly isStudent = computed(() => this.token.currentRole() === 'STUDENT');
+  readonly enrolledSubjects = signal<StudentSubjectResponse[]>([]);
+  readonly allSubjects = signal<SubjectResponse[]>([]);
+  readonly currentTermId = signal<number | null>(null);
+  readonly registeringId = signal<number | null>(null);
+  readonly showEnrollModal = signal(false);
+  readonly selectedSubjectIds = signal<Set<number>>(new Set());
+  readonly isEnrolling = signal(false);
+  readonly searchModalQuery = signal('');
+
+  readonly availableSubjects = computed<SubjectResponse[]>(() => {
+    const enrolledIds = new Set(this.enrolledSubjects().map(e => e.subjectId));
+    const q = this.searchModalQuery().toLowerCase().trim();
+    return this.allSubjects().filter(s => {
+      if (!s.active || enrolledIds.has(s.id)) return false;
+      if (q && !s.name.toLowerCase().includes(q) && !s.code.toLowerCase().includes(q)) return false;
+      return true;
+    });
+  });
 
   readonly pagedResponse = signal<PagedResponse<SubjectResponse> | null>(null);
   readonly currentPage = signal(0);
@@ -67,7 +92,123 @@ export class Subjects implements OnInit {
   });
 
 
-  ngOnInit(): void { this.load(); }
+  ngOnInit(): void {
+    if (this.isStudent()) {
+      this.loadEnrolledSubjects();
+    } else {
+      this.load();
+    }
+  }
+
+  loadEnrolledSubjects(): void {
+    this.isLoading.set(true);
+    this.studentSrv.getMyProfile().pipe(
+      catchError(() => of(null)),
+    ).subscribe({
+      next: student => {
+        if (!student) { this.isLoading.set(false); return; }
+        this.academic.getCurrentTerm().pipe(
+          catchError(() => of(null)),
+        ).subscribe({
+          next: term => {
+            if (!term) { this.isLoading.set(false); return; }
+            this.currentTermId.set(term.id);
+            this.academic.getStudentSubjects(student.id, term.id).pipe(
+              catchError(() => of([] as StudentSubjectResponse[])),
+            ).subscribe({
+              next: subjects => {
+                this.enrolledSubjects.set(subjects);
+                this.academic.getSubjects(0, 200).pipe(
+                  catchError(() => of({ content: [] } as any)),
+                ).subscribe({
+                  next: res => {
+                    this.allSubjects.set(res.content);
+                    this.isLoading.set(false);
+                  },
+                  error: () => this.isLoading.set(false),
+                });
+              },
+              error: () => this.isLoading.set(false),
+            });
+          },
+          error: () => this.isLoading.set(false),
+        });
+      },
+      error: () => this.isLoading.set(false),
+    });
+  }
+
+  registerSubject(subjectId: number): void {
+    const termId = this.currentTermId();
+    if (!termId) return;
+    this.registeringId.set(subjectId);
+    this.academic.enrollMe([subjectId], termId).pipe(
+      catchError(() => of([] as StudentSubjectResponse[])),
+    ).subscribe({
+      next: newEnrollments => {
+        if (newEnrollments.length > 0) {
+          this.enrolledSubjects.update(list => [...list, ...newEnrollments]);
+        }
+        this.registeringId.set(null);
+      },
+      error: () => this.registeringId.set(null),
+    });
+  }
+
+  dropSubject(subjectId: number): void {
+    const termId = this.currentTermId();
+    if (!termId) return;
+    this.academic.dropMySubject(subjectId, termId).pipe(
+      catchError(() => of(null)),
+    ).subscribe({
+      next: () => {
+        this.enrolledSubjects.update(list => list.filter(e => e.subjectId !== subjectId));
+      },
+    });
+  }
+
+  openEnrollModal(): void {
+    this.selectedSubjectIds.set(new Set());
+    this.searchModalQuery.set('');
+    this.showEnrollModal.set(true);
+  }
+
+  closeEnrollModal(): void {
+    this.showEnrollModal.set(false);
+    this.selectedSubjectIds.set(new Set());
+    this.searchModalQuery.set('');
+  }
+
+  toggleSubject(subjectId: number): void {
+    this.selectedSubjectIds.update(ids => {
+      const next = new Set(ids);
+      if (next.has(subjectId)) {
+        next.delete(subjectId);
+      } else {
+        next.add(subjectId);
+      }
+      return next;
+    });
+  }
+
+  confirmEnroll(): void {
+    const termId = this.currentTermId();
+    const ids = Array.from(this.selectedSubjectIds());
+    if (!termId || ids.length === 0) return;
+    this.isEnrolling.set(true);
+    this.academic.enrollMe(ids, termId).pipe(
+      catchError(() => of([] as StudentSubjectResponse[])),
+    ).subscribe({
+      next: newEnrollments => {
+        if (newEnrollments.length > 0) {
+          this.enrolledSubjects.update(list => [...list, ...newEnrollments]);
+        }
+        this.isEnrolling.set(false);
+        this.closeEnrollModal();
+      },
+      error: () => this.isEnrolling.set(false),
+    });
+  }
 
   load(): void {
     this.academic.getSubjects(this.currentPage(), this.pageSize()).subscribe({
@@ -143,6 +284,7 @@ export class Subjects implements OnInit {
   }
 
   async delete(subject: SubjectResponse): Promise<void> {
+    if (subject.isDefault) return;
     const confirmed = await this.confirm.confirm({
       title: 'Delete Subject',
       message: `Delete "${subject.name}"? This cannot be undone.`,
@@ -151,6 +293,9 @@ export class Subjects implements OnInit {
     if (!confirmed) return;
     this.academic.deleteSubject(subject.id).subscribe({
       next: () => this.load(),
+      error: err => {
+        this.errorMessage.set(err?.error?.message ?? 'Failed to delete subject');
+      },
     });
   }
 

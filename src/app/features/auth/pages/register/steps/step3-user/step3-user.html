@@ -222,18 +222,13 @@
           <div class="field"
                [class.field--error]="f.currentClass.invalid && f.currentClass.touched">
             <label class="field__label">Current class</label>
-            <input type="text" formControlName="currentClass"
-                   class="field__input" placeholder="e.g. JSS1"/>
+            <select formControlName="currentClass" class="field__input">
+              <option value="" disabled>Select a class</option>
+              @for (cls of classrooms(); track cls) {
+                <option [value]="cls">{{ cls }}</option>
+              }
+            </select>
             @if (f.currentClass.invalid && f.currentClass.touched) {
-              <span class="field__error">Required for students</span>
-            }
-          </div>
-          <div class="field"
-               [class.field--error]="f.currentSection.invalid && f.currentSection.touched">
-            <label class="field__label">Section</label>
-            <input type="text" formControlName="currentSection"
-                   class="field__input" placeholder="e.g. A"/>
-            @if (f.currentSection.invalid && f.currentSection.touched) {
               <span class="field__error">Required for students</span>
             }
           </div>

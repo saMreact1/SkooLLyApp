@@ -2,118 +2,271 @@
   <div class="page__header">
     <div>
       <h1 class="page__title">Subjects</h1>
-      <p class="page__sub">{{ filtered().length }} subject(s)</p>
-    </div>
-    <button class="btn-primary" (click)="openCreate()">
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="none"
-           stroke="currentColor" stroke-width="2.5" aria-hidden="true">
-        <line x1="12" y1="5" x2="12" y2="19"/>
-        <line x1="5" y1="12" x2="19" y2="12"/>
-      </svg>
-      Add subject
-    </button>
-  </div>
-
-  <div class="toolbar">
-    <div class="search-wrap">
-      <svg class="search-wrap__icon" width="15" height="15" viewBox="0 0 24 24"
-           fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-        <circle cx="11" cy="11" r="8"/>
-        <line x1="21" y1="21" x2="16.65" y2="16.65"/>
-      </svg>
-      <input type="search" class="search-wrap__input"
-             placeholder="Search subjects..."
-             [ngModel]="searchQuery()"
-             (ngModelChange)="searchQuery.set($event)"
-             aria-label="Search subjects"/>
-    </div>
-    <button class="filter-tab" [class.filter-tab--active]="!showElectives()"
-            (click)="showElectives.set(false)">All</button>
-    <button class="filter-tab" [class.filter-tab--active]="showElectives()"
-            (click)="showElectives.set(true)">Electives</button>
-  </div>
-
-  @if (isLoading()) {
-    <div class="table-skeleton">
-      @for (i of [1,2,3,4,5]; track i) {
-        <div class="table-skeleton__row"></div>
+      @if (isStudent()) {
+        <p class="page__sub">{{ enrolledSubjects().length }} enrolled subject(s)</p>
+      } @else {
+        <p class="page__sub">{{ filtered().length }} subject(s)</p>
       }
     </div>
-  }
+    @if (!isStudent()) {
+      <button class="btn-primary" (click)="openCreate()">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none"
+             stroke="currentColor" stroke-width="2.5" aria-hidden="true">
+          <line x1="12" y1="5" x2="12" y2="19"/>
+          <line x1="5" y1="12" x2="19" y2="12"/>
+        </svg>
+        Add subject
+      </button>
+    }
+  </div>
 
-  @else if (filtered().length === 0) {
-    <div class="empty-state">
-      <p class="empty-state__text">
-        {{ searchQuery() ? 'No subjects match your search' : 'No subjects yet' }}
-      </p>
-      @if (!searchQuery()) {
-        <button class="btn-primary" (click)="openCreate()">Add first subject</button>
-      }
-    </div>
-  }
-
-  @else {
-    <div class="table-wrap">
-      <table class="table" aria-label="Subjects list">
-        <thead>
-        <tr>
-          <th>Name</th>
-          <th>Code</th>
-          <th>Category</th>
-          <th>Type</th>
-          <th>Status</th>
-          <th class="table__actions-col">Actions</th>
-        </tr>
-        </thead>
-        <tbody>
-          @for (subject of filtered(); track subject.id) {
+  @if (isStudent()) {
+    <!-- Student view: enrolled + available subjects -->
+    @if (isLoading()) {
+      <div class="table-skeleton">
+        @for (i of [1,2,3,4,5]; track i) {
+          <div class="table-skeleton__row"></div>
+        }
+      </div>
+    } @else {
+      <!-- Enrolled subjects -->
+      <div class="section-header">
+        <h2 class="section-title">My Enrolled Subjects</h2>
+        <button class="btn-primary btn--sm" (click)="openEnrollModal()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+               stroke="currentColor" stroke-width="2.5" aria-hidden="true">
+            <line x1="12" y1="5" x2="12" y2="19"/>
+            <line x1="5" y1="12" x2="19" y2="12"/>
+          </svg>
+          Register Subject
+        </button>
+      </div>
+      @if (enrolledSubjects().length === 0) {
+        <div class="empty-state">
+          <p class="empty-state__text">You have not enrolled in any subjects yet</p>
+          <button class="btn-primary" (click)="openEnrollModal()" style="margin-top:12px">Register your first subject</button>
+        </div>
+      } @else {
+        <div class="table-wrap">
+          <table class="table" aria-label="Enrolled subjects">
+            <thead>
             <tr>
-              <td class="table__name">{{ subject.name }}</td>
-              <td><code class="code-pill">{{ subject.code }}</code></td>
-              <td class="table__cell--muted">{{ subject.category ?? '—' }}</td>
-              <td>
-                @if (subject.isElective) {
-                  <span class="badge badge--purple">Elective</span>
-                } @else {
-                  <span class="badge badge--teal">Core</span>
-                }
-              </td>
-              <td>
-                <button class="badge"
-                        [class.badge--active]="subject.active"
-                        [class.badge--inactive]="!subject.active"
-                        (click)="toggleActive(subject)"
-                        [attr.aria-label]="(subject.active ? 'Deactivate ' : 'Activate ') + subject.name">
-                  {{ subject.active ? 'Active' : 'Inactive' }}
-                </button>
-              </td>
-              <td class="table__actions">
-                <button class="icon-btn" (click)="openEdit(subject)"
-                        aria-label="Edit subject">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
-                       stroke="currentColor" stroke-width="2" aria-hidden="true">
-                    <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
-                    <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
-                  </svg>
-                </button>
-                <button class="icon-btn icon-btn--danger" (click)="delete(subject)"
-                        aria-label="Delete subject">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
-                       stroke="currentColor" stroke-width="2" aria-hidden="true">
-                    <polyline points="3 6 5 6 21 6"/>
-                    <path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/>
-                    <path d="M10 11v6M14 11v6"/>
-                  </svg>
-                </button>
-              </td>
+              <th>Name</th>
+              <th>Code</th>
+              <th>Term</th>
+              <th>Status</th>
+              <th class="table__actions-col"></th>
             </tr>
+            </thead>
+            <tbody>
+              @for (sub of enrolledSubjects(); track sub.id) {
+                <tr>
+                  <td class="table__name">{{ sub.subjectName }}</td>
+                  <td><code class="code-pill">{{ sub.subjectCode }}</code></td>
+                  <td class="table__cell--muted">{{ sub.termName }}</td>
+                  <td>
+                    <span class="badge badge--active">{{ sub.status }}</span>
+                  </td>
+                  <td class="table__actions">
+                    <button class="icon-btn icon-btn--danger"
+                            (click)="dropSubject(sub.subjectId)"
+                            aria-label="Drop subject">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                           stroke="currentColor" stroke-width="2" aria-hidden="true">
+                        <line x1="18" y1="6" x2="6" y2="18"/>
+                        <line x1="6" y1="6" x2="18" y2="18"/>
+                      </svg>
+                    </button>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+
+      <!-- Enrollment modal -->
+      @if (showEnrollModal()) {
+        <div class="panel-backdrop" (click)="closeEnrollModal()" aria-hidden="true"></div>
+        <aside class="panel panel--wide" role="dialog" aria-modal="true" aria-label="Register subjects">
+          <div class="panel__header">
+            <h2 class="panel__title">Register Subjects</h2>
+            <button class="panel__close" (click)="closeEnrollModal()" aria-label="Close">
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none"
+                   stroke="currentColor" stroke-width="2.5" aria-hidden="true">
+                <line x1="18" y1="6" x2="6" y2="18"/>
+                <line x1="6" y1="6" x2="18" y2="18"/>
+              </svg>
+            </button>
+          </div>
+          <p class="panel__subtitle">Select the subjects you want to register for this term.</p>
+
+          <div class="search-wrap" style="margin-bottom:16px">
+            <svg class="search-wrap__icon" width="15" height="15" viewBox="0 0 24 24"
+                 fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <circle cx="11" cy="11" r="8"/>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+            </svg>
+            <input type="search" class="search-wrap__input"
+                   placeholder="Search subjects..."
+                   [ngModel]="searchModalQuery()"
+                   (ngModelChange)="searchModalQuery.set($event)"
+                   aria-label="Search subjects"/>
+          </div>
+
+          @if (availableSubjects().length === 0) {
+            <div class="card__empty" style="padding:32px 16px">
+              <p>No available subjects</p>
+            </div>
+          } @else {
+            <div class="modal-subject-list">
+              @for (subject of availableSubjects(); track subject.id) {
+                <label class="modal-subject" [class.modal-subject--selected]="selectedSubjectIds().has(subject.id)">
+                  <input type="checkbox"
+                         [checked]="selectedSubjectIds().has(subject.id)"
+                         (change)="toggleSubject(subject.id)"
+                         class="checkbox-input"/>
+                  <div class="modal-subject__info">
+                    <span class="modal-subject__name">{{ subject.name }}</span>
+                    <span class="modal-subject__meta">
+                      <code class="code-pill">{{ subject.code }}</code>
+                      @if (subject.category) {
+                        <span class="table__cell--muted">· {{ subject.category }}</span>
+                      }
+                    </span>
+                  </div>
+                </label>
+              }
+            </div>
           }
-        </tbody>
-      </table>
+
+          <div class="panel__footer">
+            <span class="panel__footer-count">
+              {{ selectedSubjectIds().size }} selected
+            </span>
+            <div class="panel__footer-actions">
+              <button class="btn-secondary" (click)="closeEnrollModal()">Cancel</button>
+              <button class="btn-primary"
+                      [disabled]="selectedSubjectIds().size === 0 || isEnrolling()"
+                      (click)="confirmEnroll()">
+                @if (isEnrolling()) {
+                  <span class="spinner" aria-hidden="true"></span> Enrolling...
+                } @else {
+                  Register
+                }
+              </button>
+            </div>
+          </div>
+        </aside>
+      }
+    }
+  } @else {
+    <!-- Admin/Teacher view: all subjects with full controls -->
+    <div class="toolbar">
+      <div class="search-wrap">
+        <svg class="search-wrap__icon" width="15" height="15" viewBox="0 0 24 24"
+             fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <circle cx="11" cy="11" r="8"/>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+        <input type="search" class="search-wrap__input"
+               placeholder="Search subjects..."
+               [ngModel]="searchQuery()"
+               (ngModelChange)="searchQuery.set($event)"
+               aria-label="Search subjects"/>
+      </div>
+      <button class="filter-tab" [class.filter-tab--active]="!showElectives()"
+              (click)="showElectives.set(false)">All</button>
+      <button class="filter-tab" [class.filter-tab--active]="showElectives()"
+              (click)="showElectives.set(true)">Electives</button>
     </div>
 
-    @if (pagedResponse()) {
-      <app-paginator [pageData]="pagedResponse()!" (goToPage)="goToPage($event)"/>
+    @if (isLoading()) {
+      <div class="table-skeleton">
+        @for (i of [1,2,3,4,5]; track i) {
+          <div class="table-skeleton__row"></div>
+        }
+      </div>
+    }
+
+    @else if (filtered().length === 0) {
+      <div class="empty-state">
+        <p class="empty-state__text">
+          {{ searchQuery() ? 'No subjects match your search' : 'No subjects yet' }}
+        </p>
+        @if (!searchQuery()) {
+          <button class="btn-primary" (click)="openCreate()">Add first subject</button>
+        }
+      </div>
+    }
+
+    @else {
+      <div class="table-wrap">
+        <table class="table" aria-label="Subjects list">
+          <thead>
+          <tr>
+            <th>Name</th>
+            <th>Code</th>
+            <th>Category</th>
+            <th>Type</th>
+            <th>Status</th>
+            <th class="table__actions-col">Actions</th>
+          </tr>
+          </thead>
+          <tbody>
+            @for (subject of filtered(); track subject.id) {
+              <tr>
+                <td class="table__name">{{ subject.name }}</td>
+                <td><code class="code-pill">{{ subject.code }}</code></td>
+                <td class="table__cell--muted">{{ subject.category ?? '—' }}</td>
+                <td>
+                  @if (subject.isElective) {
+                    <span class="badge badge--purple">Elective</span>
+                  } @else if (subject.isDefault) {
+                    <span class="badge badge--blue">Default</span>
+                  } @else {
+                    <span class="badge badge--teal">Core</span>
+                  }
+                </td>
+                <td>
+                  <button class="badge"
+                          [class.badge--active]="subject.active"
+                          [class.badge--inactive]="!subject.active"
+                          (click)="toggleActive(subject)"
+                          [attr.aria-label]="(subject.active ? 'Deactivate ' : 'Activate ') + subject.name">
+                    {{ subject.active ? 'Active' : 'Inactive' }}
+                  </button>
+                </td>
+                <td class="table__actions">
+                  <button class="icon-btn" (click)="openEdit(subject)"
+                          aria-label="Edit subject">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                         stroke="currentColor" stroke-width="2" aria-hidden="true">
+                      <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
+                      <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                    </svg>
+                  </button>
+                  @if (!subject.isDefault) {
+                    <button class="icon-btn icon-btn--danger" (click)="delete(subject)"
+                            aria-label="Delete subject">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                           stroke="currentColor" stroke-width="2" aria-hidden="true">
+                        <polyline points="3 6 5 6 21 6"/>
+                        <path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/>
+                        <path d="M10 11v6M14 11v6"/>
+                      </svg>
+                    </button>
+                  }
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+
+      @if (pagedResponse()) {
+        <app-paginator [pageData]="pagedResponse()!" (goToPage)="goToPage($event)"/>
+      }
     }
   }
 

@@ -182,14 +182,25 @@ export class CommunicationService {
   }
 
   loadAnnouncements(target?: AnnouncementTarget, page = 0, size = 20): void {
-    const obs = target
-      ? this.getVisibleAnnouncements(target, page, size)
-      : this.getAllAnnouncements(page, size);
+    const resolvedTarget = target ?? this.roleToTarget(this.tokenService.currentRole());
+
+    const obs = ['ADMIN', 'SUPER_ADMIN'].includes(resolvedTarget)
+      ? this.getAllAnnouncements(page, size)
+      : this.getVisibleAnnouncements(resolvedTarget as AnnouncementTarget, page, size);
 
     obs.pipe(takeUntil(this.destroy$)).subscribe({
       next: (res) => this._announcements.set(res.content),
       error: (err) => console.error('Failed to load announcements:', err),
     });
+  }
+
+  private roleToTarget(role: string | null): string {
+    switch (role) {
+      case 'STUDENT': return 'STUDENTS';
+      case 'TEACHER': return 'TEACHERS';
+      case 'PARENT':  return 'PARENTS';
+      default:        return 'ALL';
+    }
   }
 
   markAllAnnouncementsViewed(): void {

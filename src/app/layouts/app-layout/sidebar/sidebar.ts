@@ -31,7 +31,12 @@ export class Sidebar {
   readonly navItems = computed(() => {
     const role = this.tokens.currentRole();
     if (!role) return [];
-    return NAV_ITEMS.filter(item => item.roles.includes(role));
+    return NAV_ITEMS
+      .filter(item => item.roles.includes(role))
+      .map(item => ({
+        ...item,
+        children: item.children?.filter(c => c.roles.includes(role)),
+      }));
   });
 
   readonly currentUser = this.auth.currentUser;

@@ -11,11 +11,11 @@ import {CommonModule} from '@angular/common';
 import {CreateStudentRequest, StudentResponse, StudentStatus} from '../../models/student.models';
 import {Gender} from '../../../../core/auth/models/auth.model';
 import {StudentService} from '../../services/student.service';
+import {AcademicService} from '../../../academics/services/academic.service';
+import {ClassroomResponse} from '../../../academics/models/academic.model';
 import {TokenService} from '../../../../core/auth/services/token.service';
 import {Router} from '@angular/router';
 import {ConfirmationService} from '../../../../shared/components/confirmation-modal/confirmation.service';
-import {PagedResponse} from '../../../../shared/models/paged-response.model';
-import {Paginator} from '../../../../shared/components/paginator/paginator';
 
 function passwordMatchValidator(control: AbstractControl): ValidationErrors | null {
   const pw  = control.get('password');
@@ -30,7 +30,6 @@ function passwordMatchValidator(control: AbstractControl): ValidationErrors | nu
     CommonModule,
     FormsModule,
     ReactiveFormsModule,
-    Paginator,
   ],
   templateUrl: './student-list.html',
   styleUrl: './student-list.css',
@@ -38,16 +37,16 @@ function passwordMatchValidator(control: AbstractControl): ValidationErrors | nu
 })
 export class StudentList implements OnInit {
   private readonly service = inject(StudentService);
+  private readonly academicService = inject(AcademicService);
   private readonly tokens  = inject(TokenService);
   private readonly fb      = inject(FormBuilder);
   private readonly router  = inject(Router);
   private readonly confirm = inject(ConfirmationService);
 
   // ─── State ────────────────────────────────────────────────────────────────
-  readonly pagedResponse = signal<PagedResponse<StudentResponse> | null>(null);
-  readonly currentPage   = signal(0);
-  readonly pageSize      = signal(20);
-  readonly students      = computed(() => this.pagedResponse()?.content ?? []);
+  readonly students      = signal<StudentResponse[]>([]);
+  readonly classrooms    = signal<ClassroomResponse[]>([]);
+  readonly selectedClass = signal<string | null>(null);
   readonly isLoading     = signal(true);
   readonly isSubmitting  = signal(false);
   readonly panelOpen     = signal(false);
@@ -90,7 +89,6 @@ export class StudentList implements OnInit {
       address:     ['', Validators.required],
       admissionDate:    ['', Validators.required],
       currentClass:     ['', Validators.required],
-      currentSection:   ['', Validators.required],
       emergencyContactName:         [''],
       emergencyContactPhone:        [''],
       emergencyContactRelationship: [''],
@@ -129,20 +127,41 @@ export class StudentList implements OnInit {
   );
 
   ngOnInit(): void {
-    this.load();
+    this.loadClassrooms();
   }
 
-  load(): void {
+  loadClassrooms(): void {
     this.isLoading.set(true);
-    this.service.getAll(this.currentPage(), this.pageSize()).subscribe({
-      next:  res => { this.pagedResponse.set(res); this.isLoading.set(false); },
-      error: ()   => { this.isLoading.set(false); },
+    this.academicService.getClassrooms(0, 100).subscribe({
+      next: res => {
+        this.classrooms.set(res.content);
+        this.isLoading.set(false);
+      },
+      error: () => { this.isLoading.set(false); },
     });
   }
 
-  goToPage(page: number): void {
-    this.currentPage.set(page);
-    this.load();
+  onClassSelect(className: string): void {
+    this.selectedClass.set(className);
+    this.loadStudents();
+  }
+
+  loadStudents(): void {
+    const cls = this.selectedClass();
+    if (!cls) return;
+    this.isLoading.set(true);
+    this.service.getByClass(cls).subscribe({
+      next:  res => {
+        const list = Array.isArray(res) ? res : (res as any)?.content ?? [];
+        this.students.set(list);
+        this.isLoading.set(false);
+      },
+      error: err => {
+        console.error('Failed to load students for class:', cls, err);
+        this.students.set([]);
+        this.isLoading.set(false);
+      },
+    });
   }
 
   openCreate(): void {
@@ -167,7 +186,6 @@ export class StudentList implements OnInit {
       address:                      v.address!,
       admissionDate:                v.admissionDate!,
       currentClass:                 v.currentClass!,
-      currentSection:               v.currentSection!,
       emergencyContactName:         v.emergencyContactName || undefined,
       emergencyContactPhone:        v.emergencyContactPhone || undefined,
       emergencyContactRelationship: v.emergencyContactRelationship || undefined,
@@ -179,8 +197,7 @@ export class StudentList implements OnInit {
       next: () => {
         this.closePanel();
         this.isSubmitting.set(false);
-        this.currentPage.set(0);
-        this.load();
+        this.loadStudents();
       },
       error: err => {
         this.errorMessage.set(err?.error?.message ?? 'Failed to create student');
@@ -192,7 +209,7 @@ export class StudentList implements OnInit {
   changeStatus(student: StudentResponse, status: StudentStatus): void {
     this.statusMenuFor.set(null);
     this.service.updateStatus(student.id, status).subscribe({
-      next: () => this.load(),
+      next: () => this.loadStudents(),
     });
   }
 
@@ -204,7 +221,7 @@ export class StudentList implements OnInit {
     });
     if (!confirmed) return;
     this.service.delete(student.id).subscribe({
-      next: () => this.load(),
+      next: () => this.loadStudents(),
     });
   }
 

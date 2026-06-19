@@ -1,9 +1,11 @@
-import {ChangeDetectionStrategy, Component, computed, inject, signal} from '@angular/core';
+import {ChangeDetectionStrategy, Component, computed, inject, OnInit, signal} from '@angular/core';
 import {StudentResponse, StudentStatus, UpdateStudentRequest} from '../../models/student.models';
 import {FormBuilder, ReactiveFormsModule} from '@angular/forms';
 import {ActivatedRoute, Router, RouterLink} from '@angular/router';
 import {TokenService} from '../../../../core/auth/services/token.service';
 import {StudentService} from '../../services/student.service';
+import {AcademicService} from '../../../academics/services/academic.service';
+import {StudentSubjectResponse, TermResponse} from '../../../academics/models/academic.model';
 import {CommonModule} from '@angular/common';
 
 @Component({
@@ -18,22 +20,23 @@ import {CommonModule} from '@angular/common';
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class StudentDetail {
-  private readonly service = inject(StudentService);
-  private readonly tokens  = inject(TokenService);
-  private readonly route   = inject(ActivatedRoute);
-  private readonly router  = inject(Router);
-  private readonly fb      = inject(FormBuilder);
+  private readonly service          = inject(StudentService);
+  private readonly academicService  = inject(AcademicService);
+  private readonly tokens           = inject(TokenService);
+  private readonly route            = inject(ActivatedRoute);
+  private readonly router           = inject(Router);
+  private readonly fb               = inject(FormBuilder);
 
-  readonly student      = signal<StudentResponse | null>(null);
-  readonly isLoading    = signal(true);
-  readonly isSubmitting = signal(false);
-  readonly editOpen     = signal(false);
-  readonly errorMessage = signal<string | null>(null);
+  readonly student          = signal<StudentResponse | null>(null);
+  readonly enrolledSubjects = signal<StudentSubjectResponse[]>([]);
+  readonly isLoading        = signal(true);
+  readonly isSubmitting     = signal(false);
+  readonly editOpen         = signal(false);
+  readonly errorMessage     = signal<string | null>(null);
 
   // Edit form — only UpdateStudentRequest fields
   readonly form = this.fb.group({
     currentClass:                 [''],
-    currentSection:               [''],
     emergencyContactName:         [''],
     emergencyContactPhone:        [''],
     emergencyContactRelationship: [''],
@@ -58,8 +61,24 @@ export class StudentDetail {
   ngOnInit(): void {
     const id = Number(this.route.snapshot.paramMap.get('id'));
     this.service.getById(id).subscribe({
-      next:  s  => { this.student.set(s); this.isLoading.set(false); },
+      next:  s  => {
+        this.student.set(s);
+        this.isLoading.set(false);
+        this.loadEnrolledSubjects(s.id);
+      },
       error: () => { this.isLoading.set(false); this.router.navigate(['/app/students']); },
+    });
+  }
+
+  loadEnrolledSubjects(studentId: number): void {
+    this.academicService.getCurrentTerm().subscribe({
+      next: term => {
+        this.academicService.getStudentSubjects(studentId, term.id).subscribe({
+          next: subjects => this.enrolledSubjects.set(subjects),
+          error: () => {},
+        });
+      },
+      error: () => {},
     });
   }
 
@@ -68,7 +87,6 @@ export class StudentDetail {
     if (!s) return;
     this.form.patchValue({
       currentClass:                 s.currentClass,
-      currentSection:               s.currentSection,
       emergencyContactName:         s.emergencyContactName ?? '',
       emergencyContactPhone:        s.emergencyContactPhone ?? '',
       emergencyContactRelationship: s.emergencyContactRelationship ?? '',
@@ -86,7 +104,6 @@ export class StudentDetail {
     const v = this.form.getRawValue();
     const payload: UpdateStudentRequest = {
       currentClass:                 v.currentClass   || undefined,
-      currentSection:               v.currentSection || undefined,
       emergencyContactName:         v.emergencyContactName         || undefined,
       emergencyContactPhone:        v.emergencyContactPhone        || undefined,
       emergencyContactRelationship: v.emergencyContactRelationship || undefined,

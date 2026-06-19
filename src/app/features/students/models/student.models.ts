@@ -32,7 +32,6 @@ export interface CreateStudentRequest {
   profilePictureUrl?:           string;
   admissionDate:                string;
   currentClass:                 string;
-  currentSection:               string;
   emergencyContactName?:         string;
   emergencyContactPhone?:        string;
   emergencyContactRelationship?: string;
@@ -42,7 +41,6 @@ export interface CreateStudentRequest {
 
 export interface UpdateStudentRequest {
   currentClass?:                 string;
-  currentSection?:               string;
   emergencyContactName?:         string;
   emergencyContactPhone?:        string;
   emergencyContactRelationship?: string;
@@ -58,9 +56,8 @@ export interface StudentResponse {
   email:                         string;
   admissionNumber:               string;
   admissionDate:                 string;
-  currentClass:                  string;
-  currentSection:                string;
-  status:                        StudentStatus;
+  currentClass:                 string;
+  status:                       StudentStatus;
   bloodGroup:                    string | null;
   emergencyContactName:          string | null;
   emergencyContactPhone:         string | null;

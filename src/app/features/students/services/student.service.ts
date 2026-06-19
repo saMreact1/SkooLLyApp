@@ -26,14 +26,27 @@ export class StudentService {
   }
 
   getByClass(className: string): Observable<StudentResponse[]> {
+    const encoded = encodeURIComponent(className);
     return this.http
-      .get<ApiResponse<StudentResponse[]>>(`${this.api}/class/${className}`)
+      .get<ApiResponse<StudentResponse[]>>(`${this.api}/class/${encoded}`)
       .pipe(map(r => r.data));
   }
 
   getById(id: number): Observable<StudentResponse> {
     return this.http
       .get<ApiResponse<StudentResponse>>(`${this.api}/${id}`)
+      .pipe(map(r => r.data));
+  }
+
+  getByUserId(userId: number): Observable<StudentResponse> {
+    return this.http
+      .get<ApiResponse<StudentResponse>>(`${this.api}/user/${userId}`)
+      .pipe(map(r => r.data));
+  }
+
+  getMyProfile(): Observable<StudentResponse> {
+    return this.http
+      .get<ApiResponse<StudentResponse>>(`${this.api}/me`)
       .pipe(map(r => r.data));
   }
 
