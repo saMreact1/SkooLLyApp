@@ -127,4 +127,10 @@ export class AuthService {
       formData
     );
   }
+
+  getSchoolClassrooms(schoolId: number): Observable<string[]> {
+    return this.http.get<ApiResponse<string[]>>(
+      `${this.api}/auth/school/${schoolId}/classrooms`
+    ).pipe(map(res => res.data));
+  }
 }

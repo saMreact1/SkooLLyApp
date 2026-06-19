@@ -56,8 +56,8 @@
     </div>
   }
 
-  <!-- Step 3: Classroom selector (appears after term is chosen) -->
-  @if (selectedTermId() && classrooms().length > 0) {
+  <!-- Step 3: Classroom selector (appears after term is chosen, admin/teacher only) -->
+  @if (!isStudent() && selectedTermId() && classrooms().length > 0) {
     <div class="selector-group">
       <span class="selector-label">Classroom</span>
       <div class="selector-tabs" role="tablist" aria-label="Select classroom">
@@ -120,30 +120,39 @@
           <div class="timetable-grid__row" role="row">
             <div class="timetable-grid__time" role="rowheader">{{ time }}</div>
             @for (day of days; track day) {
-              @let slot = getSlot(day, time);
+              @let slots = getSlots(day, time);
               <div class="timetable-cell"
                    role="gridcell"
-                   [class.timetable-cell--empty]="!slot"
-                   (click)="!slot && openAddSlot(day, time)"
-                   [attr.aria-label]="slot ? slot.subjectName + ' ' + day + ' ' + time
-                                           : 'Add slot ' + day + ' ' + time"
-                   [attr.tabindex]="slot ? -1 : 0"
-                   (keydown.enter)="!slot && openAddSlot(day, time)">
-                @if (slot) {
-                  <div class="slot-pill" [class]="slotColor(slot.subjectId)">
-                    <span class="slot-pill__subject">{{ slot.subjectName }}</span>
-                    <span class="slot-pill__teacher">{{ slot.teacherName }}</span>
-                    <button class="slot-pill__remove"
-                            (click)="deleteSlot(slot, $event)"
-                            [attr.aria-label]="'Remove ' + slot.subjectName">
-                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none"
-                           stroke="currentColor" stroke-width="2.5" aria-hidden="true">
-                        <line x1="18" y1="6" x2="6" y2="18"/>
-                        <line x1="6" y1="6" x2="18" y2="18"/>
-                      </svg>
-                    </button>
+                   [class.timetable-cell--empty]="slots.length === 0"
+                   (click)="!isStudent() && openAddSlot(day, time)"
+                   [attr.aria-label]="slots.length > 0 ? slots[0].subjectName + ' ' + day + ' ' + time
+                                           : (isStudent() ? 'No class' : 'Add slot ' + day + ' ' + time)"
+                   [attr.tabindex]="isStudent() ? -1 : 0"
+                   (keydown.enter)="!isStudent() && openAddSlot(day, time)">
+                @if (slots.length > 0) {
+                  <div class="timetable-cell__slots">
+                    @for (slot of slots; track slot.id) {
+                      <div class="slot-pill" [class]="slotColor(slot.subjectId)"
+                           (click)="!isStudent() && openEditSlot(slot, $event)"
+                           [style.cursor]="isStudent() ? 'default' : 'pointer'">
+                        <span class="slot-pill__subject">{{ slot.subjectName }}</span>
+                        <span class="slot-pill__teacher">{{ slot.teacherName }}</span>
+                        @if (!isStudent()) {
+                          <button class="slot-pill__remove"
+                                  (click)="deleteSlot(slot, $event)"
+                                  [attr.aria-label]="'Remove ' + slot.subjectName">
+                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none"
+                                 stroke="currentColor" stroke-width="2.5" aria-hidden="true">
+                              <line x1="18" y1="6" x2="6" y2="18"/>
+                              <line x1="6" y1="6" x2="18" y2="18"/>
+                            </svg>
+                          </button>
+                        }
+                      </div>
+                    }
                   </div>
-                } @else {
+                }
+                @if (!isStudent()) {
                   <span class="timetable-cell__add" aria-hidden="true">+</span>
                 }
               </div>
@@ -168,13 +177,13 @@
     }
   }
 
-  <!-- Add slot panel -->
-  @if (panelOpen()) {
+  <!-- Add slot panel (admin/teacher only) -->
+  @if (panelOpen() && !isStudent()) {
     <div class="panel-backdrop" (click)="closePanel()" aria-hidden="true"></div>
     <aside class="panel" role="dialog" aria-modal="true"
            aria-label="Add timetable slot">
       <div class="panel__header">
-        <h2 class="panel__title">Add timetable slot</h2>
+        <h2 class="panel__title">{{ editingSlot() ? 'Edit' : 'Add' }} timetable slot</h2>
         <button class="panel__close" (click)="closePanel()" aria-label="Close">
           <svg width="17" height="17" viewBox="0 0 24 24" fill="none"
                stroke="currentColor" stroke-width="2.5" aria-hidden="true">
@@ -234,15 +243,41 @@
         </div>
 
         <div class="field">
-          <label class="field__label">Subject</label>
-          <select formControlName="subjectId" class="field__input">
-            <option [ngValue]="null" disabled>Select subject</option>
-            @for (subject of subjects(); track subject.id) {
-              <option [ngValue]="subject.id">{{ subject.name }}</option>
+          @if (editingSlot()) {
+            <label class="field__label">Subject</label>
+            <select formControlName="subjectId" class="field__input">
+              <option [ngValue]="null" disabled>Select subject</option>
+              @for (subject of subjects(); track subject.id) {
+                <option [value]="subject.id">{{ subject.name }}</option>
+              }
+            </select>
+            @if (form.controls.subjectId.invalid && form.controls.subjectId.touched) {
+              <span class="field__error">Required</span>
             }
-          </select>
-          @if (form.controls.subjectId.invalid && form.controls.subjectId.touched) {
-            <span class="field__error">Required</span>
+          } @else {
+            <label class="field__label">
+              Subjects
+              @if (selectedSubjectIds().size > 0) {
+                <span class="field__count">({{ selectedSubjectIds().size }} selected)</span>
+              }
+            </label>
+            <input type="text" class="field__input" placeholder="Search subjects..."
+                   [value]="subjectSearch()"
+                   (input)="subjectSearch.set($any($event.target).value)">
+            <div class="subject-checkbox-list">
+              @for (subject of filteredSubjects(); track subject.id) {
+                <label class="subject-checkbox"
+                       [class.subject-checkbox--checked]="selectedSubjectIds().has(subject.id)">
+                  <input type="checkbox"
+                         [checked]="selectedSubjectIds().has(subject.id)"
+                         (change)="toggleSubject(subject.id)">
+                  <span class="subject-checkbox__name">{{ subject.name }}</span>
+                </label>
+              }
+              @if (filteredSubjects().length === 0) {
+                <span class="subject-checkbox__empty">No subjects found</span>
+              }
+            </div>
           }
         </div>
 
@@ -264,9 +299,13 @@
         <button type="submit" class="btn-primary btn--full"
                 [disabled]="isSubmitting()">
           @if (isSubmitting()) {
-            <span class="spinner" aria-hidden="true"></span> Adding...
+            <span class="spinner" aria-hidden="true"></span> {{ editingSlot() ? 'Updating...' : 'Adding...' }}
           } @else {
-            Add to timetable
+            @if (editingSlot()) {
+              Update slot
+            } @else {
+              Add {{ selectedSubjectIds().size || '' }} slot(s) to timetable
+            }
           }
         </button>
 

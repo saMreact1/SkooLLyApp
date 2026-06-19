@@ -1,0 +1,167 @@
+<div class="page">
+  <div class="page__header">
+    <div>
+      <h1 class="page__title">Student Enrollment</h1>
+      <p class="page__sub">Enroll students in subjects for the current term</p>
+    </div>
+  </div>
+
+  @if (isLoading()) {
+    <div class="loading-state">
+      <span class="spinner spinner--lg" aria-hidden="true"></span>
+      <p>Loading...</p>
+    </div>
+  } @else {
+    <!-- Selection row -->
+    <div class="selection-row">
+      <div class="field field--grow">
+        <label class="field__label">Select student</label>
+        <select class="field__input"
+                [ngModel]="selectedStudentId()"
+                (ngModelChange)="onStudentChange($event)">
+          <option [ngValue]="null" disabled>-- Choose a student --</option>
+          @for (student of students(); track student.id) {
+            <option [ngValue]="student.id">
+              {{ student.firstName }} {{ student.lastName }} ({{ student.admissionNumber }})
+            </option>
+          }
+        </select>
+      </div>
+
+      <div class="field field--grow">
+        <label class="field__label">Select term</label>
+        <select class="field__input"
+                [ngModel]="selectedTermId()"
+                (ngModelChange)="onTermChange($event)">
+          @for (term of terms(); track term.id) {
+            <option [ngValue]="term.id">{{ term.name }}</option>
+          }
+        </select>
+      </div>
+    </div>
+
+    @if (selectedStudentId() && selectedTermId()) {
+      <!-- Messages -->
+      @if (errorMessage()) {
+        <div class="alert alert--error">{{ errorMessage() }}</div>
+      }
+      @if (successMessage()) {
+        <div class="alert alert--success">{{ successMessage() }}</div>
+      }
+
+      <div class="enrollment-layout">
+        <!-- Available subjects -->
+        <div class="enrollment-panel">
+          <div class="enrollment-panel__header">
+            <h2 class="enrollment-panel__title">Available Subjects</h2>
+            <span class="enrollment-panel__count">{{ filteredSubjects().length }}</span>
+          </div>
+
+          <div class="search-wrap">
+            <svg class="search-wrap__icon" width="15" height="15" viewBox="0 0 24 24"
+                 fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <circle cx="11" cy="11" r="8"/>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+            </svg>
+            <input type="search" class="search-wrap__input"
+                   placeholder="Search subjects..."
+                   [ngModel]="searchQuery()"
+                   (ngModelChange)="searchQuery.set($event)"
+                   aria-label="Search subjects"/>
+          </div>
+
+          <div class="subject-list">
+            @for (subject of filteredSubjects(); track subject.id) {
+              <label class="subject-item"
+                     [class.subject-item--selected]="isSubjectSelected(subject.id)">
+                <input type="checkbox"
+                       class="subject-item__checkbox"
+                       [checked]="isSubjectSelected(subject.id)"
+                       (change)="toggleSubject(subject.id)"/>
+                <div class="subject-item__info">
+                  <span class="subject-item__name">{{ subject.name }}</span>
+                  <span class="subject-item__meta">
+                    <code class="code-pill code-pill--sm">{{ subject.code }}</code>
+                    @if (subject.category) {
+                      <span class="subject-item__category">{{ subject.category }}</span>
+                    }
+                  </span>
+                </div>
+                @if (subject.isElective) {
+                  <span class="badge badge--purple badge--sm">Elective</span>
+                }
+              </label>
+            } @empty {
+              <div class="empty-inline">
+                @if (searchQuery()) {
+                  <p>No subjects match your search</p>
+                } @else {
+                  <p>All subjects are already enrolled</p>
+                }
+              </div>
+            }
+          </div>
+
+          @if (selectedCount() > 0) {
+            <div class="enroll-action">
+              <button class="btn-primary btn--full"
+                      [disabled]="isEnrolling()"
+                      (click)="enroll()">
+                @if (isEnrolling()) {
+                  <span class="spinner" aria-hidden="true"></span> Enrolling...
+                } @else {
+                  Enroll in {{ selectedCount() }} subject(s)
+                }
+              </button>
+            </div>
+          }
+        </div>
+
+        <!-- Currently enrolled -->
+        <div class="enrollment-panel">
+          <div class="enrollment-panel__header">
+            <h2 class="enrollment-panel__title">Currently Enrolled</h2>
+            <span class="enrollment-panel__count">{{ enrolledSubjects().length }}</span>
+          </div>
+
+          @if (isLoadingEnrolled()) {
+            <div class="loading-inline">
+              <span class="spinner" aria-hidden="true"></span>
+            </div>
+          } @else {
+            <div class="enrolled-list">
+              @for (enrollment of enrolledSubjects(); track enrollment.id) {
+                <div class="enrolled-item">
+                  <div class="enrolled-item__info">
+                    <span class="enrolled-item__name">{{ enrollment.subjectName }}</span>
+                    <span class="enrolled-item__meta">
+                      <code class="code-pill code-pill--sm">{{ enrollment.subjectCode }}</code>
+                      <span class="badge badge--sm" [class]="statusClass(enrollment.status)">
+                        {{ statusLabel(enrollment.status) }}
+                      </span>
+                    </span>
+                  </div>
+                  @if (enrollment.status === 'ENROLLED') {
+                    <button class="icon-btn icon-btn--danger"
+                            (click)="dropEnrollment(enrollment)"
+                            aria-label="Drop subject">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                           stroke="currentColor" stroke-width="2" aria-hidden="true">
+                        <line x1="18" y1="6" x2="6" y2="18"/>
+                        <line x1="6" y1="6" x2="18" y2="18"/>
+                      </svg>
+                    </button>
+                  }
+                </div>
+              } @empty {
+                <div class="empty-inline">
+                  <p>No subjects enrolled yet</p>
+                </div>
+              }
+            </div>
+          }
+        </div>
+      </div>
+    }
+  }
+</div>

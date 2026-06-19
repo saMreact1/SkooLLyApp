@@ -28,7 +28,39 @@ export interface SessionResponse {
   isCurrent:  boolean;
   schoolName: string;
   terms:      TermResponse[];
-  createdAt:  string;
+  createdAt:        string;
+}
+
+// Enrollment
+export type EnrollmentStatus = 'ENROLLED' | 'DROPPED' | 'COMPLETED';
+
+export interface EnrollStudentRequest {
+  studentId:  number;
+  subjectIds: number[];
+  termId:     number;
+}
+
+export interface StudentSubjectResponse {
+  id:               number;
+  studentId:        number;
+  studentName:      string;
+  admissionNumber:  string;
+  subjectId:        number;
+  subjectName:      string;
+  subjectCode:      string;
+  termId:           number;
+  termName:         string;
+  status:           EnrollmentStatus;
+  enrolledAt:       string;
+}
+
+export interface EnrolledStudentResponse {
+  id:               number;
+  studentId:        number;
+  studentName:      string;
+  admissionNumber:  string;
+  status:           EnrollmentStatus;
+  enrolledAt:       string;
 }
 
 // Term
@@ -76,6 +108,7 @@ export interface SubjectResponse {
   description: string | null;
   category:    string | null;
   isElective:  boolean;
+  isDefault:   boolean;
   active:      boolean;
   schoolName:  string;
   createdAt:   string;

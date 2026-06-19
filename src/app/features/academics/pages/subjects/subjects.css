@@ -141,6 +141,7 @@
 }
 .badge--teal   { background: var(--accent-soft);  color: var(--accent-strong); }
 .badge--purple { background: #EEEDFE;             color: var(--primary-500);   }
+.badge--blue   { background: #E8F4FD;             color: #1976D2;             }
 .badge--amber  { background: var(--primary-200);  color: var(--primary);       }
 .badge--gray   { background: var(--bg-muted);     color: var(--text-muted);    }
 
@@ -251,4 +252,109 @@
 .filter-tab--active:hover {
   background: none !important;
   color: var(--text-primary);
+}
+
+.section-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 12px;
+}
+
+.btn--sm {
+  padding: 5px 12px;
+  font-size: 12px;
+}
+
+.section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+.section-header .section-title {
+  margin-bottom: 0;
+}
+
+.panel--wide {
+  width: 480px;
+}
+
+.modal-subject-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-height: 420px;
+  overflow-y: auto;
+}
+
+.modal-subject {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.12s;
+}
+.modal-subject:hover {
+  background: var(--bg-surface-hover);
+}
+.modal-subject--selected {
+  background: var(--accent-soft);
+}
+
+.modal-subject__info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.modal-subject__name {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.modal-subject__meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+}
+
+.panel__footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 16px;
+  border-top: 0.5px solid var(--border);
+  margin-top: 16px;
+}
+
+.panel__footer-count {
+  font-size: 13px;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.panel__footer-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.btn-secondary {
+  padding: 8px 16px;
+  background: var(--bg-muted);
+  color: var(--text-secondary);
+  border: 0.5px solid var(--border);
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.12s;
+}
+.btn-secondary:hover {
+  background: var(--bg-surface-hover);
 }

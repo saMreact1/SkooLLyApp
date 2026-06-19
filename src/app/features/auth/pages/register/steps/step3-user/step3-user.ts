@@ -54,6 +54,7 @@ export class Step3User implements OnInit {
   readonly isLoading    = signal(false);
   readonly errorMessage = signal<string | null>(null);
   readonly showPassword = signal(false);
+  readonly classrooms  = signal<string[]>([]);
 
   readonly avatarPreview = signal<string | null>(null);
   private selectedAvatar: File | null = null;
@@ -101,7 +102,6 @@ export class Step3User implements OnInit {
 
       // Student-only fields (conditionally required)
       currentClass:                 [''],
-      currentSection:               [''],
       admissionDate:                [''],
       emergencyContactName:         [''],
       emergencyContactPhone:        [''],
@@ -138,6 +138,11 @@ export class Step3User implements OnInit {
       .subscribe(role => {
         this.toggleStudentValidators(role === 'STUDENT');
       });
+
+    this.auth.getSchoolClassrooms(this.schoolId).subscribe({
+      next: list => this.classrooms.set(list),
+      error: () => {},
+    });
   }
 
   onAvatarSelected(event: Event): void {
@@ -162,7 +167,7 @@ export class Step3User implements OnInit {
   }
 
   private toggleStudentValidators(isStudent: boolean): void {
-    const studentRequiredFields = ['currentClass', 'currentSection', 'admissionDate'] as const;
+    const studentRequiredFields = ['currentClass', 'admissionDate'] as const;
 
     for (const fieldName of studentRequiredFields) {
       const control = this.form.controls[fieldName];
@@ -210,7 +215,6 @@ export class Step3User implements OnInit {
 
             admissionDate: isStudent ? v.admissionDate! : undefined,
             currentClass: isStudent ? v.currentClass! : undefined,
-            currentSection: isStudent ? v.currentSection! : undefined,
             emergencyContactName: isStudent ? v.emergencyContactName || undefined : undefined,
             emergencyContactPhone: isStudent ? v.emergencyContactPhone || undefined : undefined,
             emergencyContactRelationship: isStudent ? v.emergencyContactRelationship || undefined : undefined,

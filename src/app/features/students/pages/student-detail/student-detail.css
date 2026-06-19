@@ -189,3 +189,43 @@
 }
 .field__input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--box-shadow); }
 .field__error { display: block; font-size: 11.5px; color: var(--danger); margin-top: 3px; }
+
+.detail-card--full {
+  grid-column: 1 / -1;
+}
+
+.enrolled-subjects-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.enrolled-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: var(--bg-muted);
+  border: 0.5px solid var(--border);
+  border-radius: 8px;
+  font-size: 13px;
+}
+.enrolled-chip__name {
+  font-weight: 500;
+  color: var(--text-primary);
+}
+.enrolled-chip__code {
+  font-size: 10px;
+  font-family: monospace;
+  background: var(--bg-surface);
+  border: 0.5px solid var(--border);
+  border-radius: 4px;
+  padding: 1px 5px;
+  color: var(--text-muted);
+}
+
+.detail-empty {
+  font-size: 13px;
+  color: var(--text-muted);
+  padding: 8px 0;
+}

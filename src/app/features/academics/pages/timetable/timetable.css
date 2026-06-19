@@ -140,6 +140,10 @@
 .timetable-cell--empty { cursor: pointer; }
 .timetable-cell--empty:hover { background: var(--accent-soft); }
 
+.timetable-cell__slots {
+  flex: 1; display: flex; flex-direction: column; gap: 3px;
+}
+
 .timetable-cell__add {
   position: absolute; inset: 0;
   display: flex; align-items: center; justify-content: center;
@@ -272,3 +276,31 @@
 }
 .field__input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--box-shadow); }
 .field__error { display: block; font-size: 12px; color: var(--danger); margin-top: 4px; }
+.field__count { font-weight: 400; color: var(--accent); font-size: 11px; }
+
+/* ─── Subject checkbox list ──────────────────────────────────────────────────── */
+.subject-checkbox-list {
+  max-height: 200px; overflow-y: auto;
+  border: 0.5px solid var(--border); border-radius: 8px;
+  margin-top: 6px;
+}
+.subject-checkbox {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 12px; cursor: pointer;
+  transition: background 0.1s;
+  border-bottom: 0.5px solid var(--bg-muted);
+}
+.subject-checkbox:last-child { border-bottom: none; }
+.subject-checkbox:hover { background: var(--bg-muted); }
+.subject-checkbox--checked { background: var(--accent-soft); }
+.subject-checkbox input[type="checkbox"] {
+  width: 16px; height: 16px; accent-color: var(--accent);
+  cursor: pointer; flex-shrink: 0;
+}
+.subject-checkbox__name {
+  font-size: 13px; color: var(--text-primary); font-weight: 500;
+}
+.subject-checkbox__empty {
+  display: block; padding: 12px; text-align: center;
+  font-size: 13px; color: var(--text-muted);
+}

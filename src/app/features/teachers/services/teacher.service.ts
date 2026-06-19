@@ -58,6 +58,12 @@ export class TeacherService {
       .pipe(map(() => void 0));
   }
 
+  getMyProfile(): Observable<TeacherResponse> {
+    return this.http
+      .get<ApiResponse<TeacherResponse>>(`${this.api}/me`)
+      .pipe(map(r => r.data));
+  }
+
   getCount(): Observable<number> {
     return this.http
       .get<ApiResponse<number>>(`${this.api}/count`)

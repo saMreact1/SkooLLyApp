@@ -11,6 +11,7 @@ import {
   CreateSubjectRequest,   UpdateSubjectRequest,   SubjectResponse,
   CreateClassroomRequest, UpdateClassroomRequest, ClassroomResponse,
   CreateTimetableRequest, TimetableResponse,
+  EnrollStudentRequest,   StudentSubjectResponse, EnrolledStudentResponse,
 } from '../models/academic.model';
 
 @Injectable({ providedIn: 'root' })
@@ -114,6 +115,7 @@ export class AcademicService {
   private mapSubject = (s: Record<string, unknown>): SubjectResponse => ({
     ...s,
     isElective: !!(s['elective'] ?? s['isElective'] ?? s['is_elective']),
+    isDefault: !!(s['default'] ?? s['isDefault'] ?? s['is_default']),
   }) as SubjectResponse;
 
   getSubjects(page = 0, size = 20): Observable<PagedResponse<SubjectResponse>> {
@@ -262,5 +264,81 @@ export class AcademicService {
     return this.http
       .delete<ApiResponse<null>>(`${this.api}/timetable/${id}`)
       .pipe(map(() => void 0));
+  }
+
+  updateTimetableEntry(
+    id: number,
+    payload: Omit<CreateTimetableRequest, 'sessionId' | 'termId' | 'classroomId'>
+  ): Observable<TimetableResponse> {
+    return this.http
+      .put<ApiResponse<TimetableResponse>>(
+        `${this.api}/timetable/${id}`, payload
+      )
+      .pipe(map(r => r.data));
+  }
+
+  // Enrollments
+
+  enrollStudent(payload: EnrollStudentRequest): Observable<StudentSubjectResponse[]> {
+    return this.http
+      .post<ApiResponse<StudentSubjectResponse[]>>(`${this.api}/enrollments`, payload)
+      .pipe(map(r => r.data));
+  }
+
+  getStudentSubjects(studentId: number, termId: number): Observable<StudentSubjectResponse[]> {
+    return this.http
+      .get<ApiResponse<StudentSubjectResponse[]>>(
+        `${this.api}/enrollments/student/${studentId}/term/${termId}`
+      )
+      .pipe(map(r => r.data));
+  }
+
+  getSubjectStudents(subjectId: number, termId: number): Observable<EnrolledStudentResponse[]> {
+    return this.http
+      .get<ApiResponse<EnrolledStudentResponse[]>>(
+        `${this.api}/enrollments/subject/${subjectId}/term/${termId}`
+      )
+      .pipe(map(r => r.data));
+  }
+
+  dropStudentFromSubject(
+    studentId: number,
+    subjectId: number,
+    termId: number
+  ): Observable<void> {
+    return this.http
+      .delete<ApiResponse<null>>(`${this.api}/enrollments`, {
+        params: {
+          studentId: String(studentId),
+          subjectId: String(subjectId),
+          termId: String(termId),
+        }
+      })
+      .pipe(map(() => void 0));
+  }
+
+  enrollMe(subjectIds: number[], termId: number): Observable<StudentSubjectResponse[]> {
+    return this.http
+      .post<ApiResponse<StudentSubjectResponse[]>>(
+        `${this.api}/enrollments/me`,
+        { subjectIds, termId }
+      )
+      .pipe(map(r => r.data));
+  }
+
+  dropMySubject(subjectId: number, termId: number): Observable<void> {
+    return this.http
+      .delete<ApiResponse<null>>(`${this.api}/enrollments/me`, {
+        params: { subjectId: String(subjectId), termId: String(termId) }
+      })
+      .pipe(map(() => void 0));
+  }
+
+  getMyEnrolledSubjects(termId: number): Observable<StudentSubjectResponse[]> {
+    return this.http
+      .get<ApiResponse<StudentSubjectResponse[]>>(
+        `${this.api}/enrollments/me/term/${termId}`
+      )
+      .pipe(map(r => r.data));
   }
 }

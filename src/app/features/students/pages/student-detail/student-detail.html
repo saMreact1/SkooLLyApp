@@ -27,7 +27,7 @@
         <p class="profile-header__meta">
           <code class="code-pill">{{ s.admissionNumber }}</code>
           &nbsp;·&nbsp;
-          {{ s.currentClass }} {{ s.currentSection }}
+          {{ s.currentClass }}
           &nbsp;·&nbsp;
           {{ s.schoolName }}
         </p>
@@ -71,10 +71,6 @@
           <div class="detail-row">
             <span class="detail-row__label">Current class</span>
             <span class="detail-row__value">{{ s.currentClass }}</span>
-          </div>
-          <div class="detail-row">
-            <span class="detail-row__label">Section</span>
-            <span class="detail-row__value">{{ s.currentSection }}</span>
           </div>
           <div class="detail-row">
             <span class="detail-row__label">Admission date</span>
@@ -124,6 +120,23 @@
         </div>
       </div>
 
+      <!-- Enrolled subjects -->
+      <div class="detail-card detail-card--full">
+        <h2 class="detail-card__title">Enrolled Subjects</h2>
+        @if (enrolledSubjects().length > 0) {
+          <div class="enrolled-subjects-grid">
+            @for (enrollment of enrolledSubjects(); track enrollment.id) {
+              <div class="enrolled-chip">
+                <span class="enrolled-chip__name">{{ enrollment.subjectName }}</span>
+                <code class="enrolled-chip__code">{{ enrollment.subjectCode }}</code>
+              </div>
+            }
+          </div>
+        } @else {
+          <p class="detail-empty">No subjects enrolled for the current term</p>
+        }
+      </div>
+
     </div>
   }
 
@@ -156,10 +169,6 @@
           <div class="field">
             <label class="field__label">Class</label>
             <input type="text" formControlName="currentClass" class="field__input"/>
-          </div>
-          <div class="field">
-            <label class="field__label">Section</label>
-            <input type="text" formControlName="currentSection" class="field__input"/>
           </div>
         </div>
         <div class="field">
