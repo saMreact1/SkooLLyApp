@@ -1,0 +1,85 @@
+<div class="page">
+  <div class="page__header">
+    <div>
+      <a routerLink="/app/examinations/list" class="page__back">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5m7-7l-7 7 7 7"/></svg>
+        Exams
+      </a>
+      <h1 class="page__title">{{ sheet()?.examName ?? 'Grade Sheet' }}</h1>
+      <p class="page__sub">
+        {{ sheet()?.subjectName }} &middot; {{ sheet()?.classroomName }}
+        &middot; {{ sheet()?.termName }}
+      </p>
+    </div>
+  </div>
+
+  @if (sheet()) {
+    <div class="stats-row">
+      <div class="stat-card stat-card--teal">
+        <span class="stat-card__label">Class Average</span>
+        <span class="stat-card__value">{{ sheet()!.classAverage | number:'1.1-1' }}</span>
+      </div>
+      <div class="stat-card stat-card--green">
+        <span class="stat-card__label">Highest</span>
+        <span class="stat-card__value">{{ sheet()!.highestMark | number:'1.1-1' }}</span>
+      </div>
+      <div class="stat-card stat-card--coral">
+        <span class="stat-card__label">Lowest</span>
+        <span class="stat-card__value">{{ sheet()!.lowestMark | number:'1.1-1' }}</span>
+      </div>
+      <div class="stat-card stat-card--purple">
+        <span class="stat-card__label">Total Students</span>
+        <span class="stat-card__value">{{ sheet()!.grades.length }}</span>
+      </div>
+    </div>
+  }
+
+  @if (isLoading()) {
+    <div class="skeleton-list">
+      @for (i of [1,2,3,4,5]; track i) {
+        <div class="skeleton-row"></div>
+      }
+    </div>
+  } @else if (sortedGrades().length === 0) {
+    <div class="empty-state">
+      <p>No grades recorded for this exam yet</p>
+    </div>
+  } @else {
+    <div class="table-wrap">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Rank</th>
+            <th>Student</th>
+            <th>Adm. No.</th>
+            <th>Marks ({{ sheet()!.maxMarks }})</th>
+            <th>Percentage</th>
+            <th>Grade</th>
+            <th>Remark</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (entry of sortedGrades(); track entry.studentId; let i = $index) {
+            <tr>
+              <td class="cell-rank">
+                @if (i < 3) {
+                  <span class="rank-badge" [class]="'rank-badge--' + (i + 1)">{{ i + 1 }}</span>
+                } @else {
+                  {{ i + 1 }}
+                }
+              </td>
+              <td><span class="cell-primary">{{ entry.studentName }}</span></td>
+              <td>{{ entry.admissionNumber }}</td>
+              <td>{{ entry.marksObtained | number:'1.1-1' }}</td>
+              <td>{{ entry.percentage | number:'1.1-1' }}%</td>
+              <td>
+                <span class="grade-badge" [class]="gradeClass(entry.letterGrade)">{{ entry.letterGrade }}</span>
+              </td>
+              <td>{{ entry.remark || '—' }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</div>
