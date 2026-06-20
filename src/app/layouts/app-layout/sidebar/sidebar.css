@@ -91,6 +91,9 @@
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
+.sidebar__avatar--img {
+  object-fit: cover;
+}
 
 .sidebar__user-info {
   display: flex;

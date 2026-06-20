@@ -102,9 +102,13 @@
     <!-- User avatar -->
     @if (currentUser()) {
       <div class="topbar__user" role="button" tabindex="0" aria-label="User menu">
-        <div class="topbar__avatar" aria-hidden="true">
-          {{ currentUser()!.firstName[0] }}{{ currentUser()!.lastName[0] }}
-        </div>
+        @if (currentUser()!.profilePictureUrl) {
+          <img class="topbar__avatar topbar__avatar--img" [src]="currentUser()!.profilePictureUrl" alt="{{ currentUser()!.firstName }} {{ currentUser()!.lastName }}" />
+        } @else {
+          <div class="topbar__avatar" aria-hidden="true">
+            {{ currentUser()!.firstName[0] }}{{ currentUser()!.lastName[0] }}
+          </div>
+        }
 <!--        <span class="topbar__user-name">-->
 <!--          {{ currentUser()!.firstName }}-->
 <!--        </span>-->

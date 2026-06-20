@@ -31,9 +31,13 @@
   <!-- ── User card ───────────────────────────────────────────────────────── -->
   @if (currentUser()) {
     <div class="sidebar__user">
-      <div class="sidebar__avatar" aria-hidden="true">
-        {{ currentUser()!.firstName[0] }}{{ currentUser()!.lastName[0] }}
-      </div>
+      @if (currentUser()!.profilePictureUrl) {
+        <img class="sidebar__avatar sidebar__avatar--img" [src]="currentUser()!.profilePictureUrl" alt="{{ currentUser()!.firstName }} {{ currentUser()!.lastName }}" />
+      } @else {
+        <div class="sidebar__avatar" aria-hidden="true">
+          {{ currentUser()!.firstName[0] }}{{ currentUser()!.lastName[0] }}
+        </div>
+      }
       <div class="sidebar__user-info">
         <span class="sidebar__user-name">
           {{ currentUser()!.firstName }} {{ currentUser()!.lastName }}

@@ -1,0 +1,166 @@
+<div class="page">
+  <div class="page__header">
+    <div>
+      <h1 class="page__title">Report Card</h1>
+      <p class="page__sub">View student academic performance</p>
+    </div>
+  </div>
+
+  @if (!isStudent()) {
+    <div class="filters">
+      <label class="filter-group">
+        <span class="filter-label">Class</span>
+        <select class="filter-select" [ngModel]="selectedClassroomId()" (ngModelChange)="onClassroomChange($event)">
+          <option [ngValue]="null">Select class</option>
+          @for (c of classrooms(); track c.id) {
+            <option [ngValue]="c.id">{{ c.name }} {{ c.section }}</option>
+          }
+        </select>
+      </label>
+      <label class="filter-group">
+        <span class="filter-label">Term</span>
+        <select class="filter-select" [ngModel]="selectedTermId()" (ngModelChange)="onTermChange($event)">
+          <option [ngValue]="null">Select term</option>
+          @for (t of terms(); track t.id) {
+            <option [ngValue]="t.id">{{ t.name }}</option>
+          }
+        </select>
+      </label>
+    </div>
+
+    @if (selectedClassroomId()) {
+      @if (isLoadingStudents()) {
+        <div class="hint-state">Loading students...</div>
+      } @else if (studentsInClass().length === 0) {
+        <div class="empty-state">
+          <p>No students in this class</p>
+        </div>
+      } @else {
+        <div class="student-list">
+          @for (student of studentsInClass(); track student.id) {
+            <button
+              class="student-row"
+              (click)="viewReport(student.id)"
+              [disabled]="!selectedTermId()"
+            >
+              <div class="student-row__avatar">{{ student.firstName.charAt(0) }}{{ student.lastName.charAt(0) }}</div>
+              <div class="student-row__info">
+                <span class="student-row__name">{{ student.firstName }} {{ student.lastName }}</span>
+                <span class="student-row__meta">{{ student.admissionNumber }}</span>
+              </div>
+              <svg class="student-row__icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                <path d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+              </svg>
+            </button>
+          }
+        </div>
+      }
+    } @else {
+      <div class="hint-state">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+          <path d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+        </svg>
+        <p>Select a class to view students</p>
+      </div>
+    }
+  } @else {
+    <div class="filters">
+      <label class="filter-group">
+        <span class="filter-label">Term</span>
+        <select class="filter-select" [ngModel]="selectedTermId()" (ngModelChange)="onTermChange($event)">
+          <option [ngValue]="null">Select term</option>
+          @for (t of terms(); track t.id) {
+            <option [ngValue]="t.id">{{ t.name }}</option>
+          }
+        </select>
+      </label>
+    </div>
+  }
+
+  @if (isLoadingReport()) {
+    <div class="skeleton-card-lg"></div>
+  }
+
+  @if (showReport() && hasReport()) {
+    <div class="modal-backdrop" (click)="closeReport()"></div>
+    <div class="modal">
+      <div class="modal__header">
+        <h2 class="modal__title">{{ reportCard()!.studentName }} — Report Card</h2>
+        <button class="icon-btn" (click)="closeReport()">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+      <div class="modal__body">
+        <div class="report-card">
+          <div class="report-card__header">
+            <h2 class="report-card__school">{{ reportCard()!.classroomName }}</h2>
+            <div class="report-card__meta">
+              <span>{{ reportCard()!.studentName }}</span>
+              <span class="divider">&middot;</span>
+              <span>{{ reportCard()!.admissionNumber }}</span>
+              <span class="divider">&middot;</span>
+              <span>{{ reportCard()!.sessionName }} — {{ reportCard()!.termName }}</span>
+            </div>
+          </div>
+
+          <div class="report-summary">
+            <div class="report-summary__item">
+              <span class="report-summary__label">Total Marks</span>
+              <span class="report-summary__value">{{ reportCard()!.totalMarksObtained | number:'1.1-1' }} / {{ reportCard()!.totalMaxMarks }}</span>
+            </div>
+            <div class="report-summary__item">
+              <span class="report-summary__label">Overall %</span>
+              <span class="report-summary__value">{{ reportCard()!.overallPercentage | number:'1.1-1' }}%</span>
+            </div>
+            <div class="report-summary__item">
+              <span class="report-summary__label">Overall Grade</span>
+              <span class="grade-badge grade-badge--lg" [class]="gradeClass(reportCard()!.overallGrade)">{{ reportCard()!.overallGrade }}</span>
+            </div>
+            @if (reportCard()!.rank > 0) {
+              <div class="report-summary__item">
+                <span class="report-summary__label">Class Rank</span>
+                <span class="report-summary__value">#{{ reportCard()!.rank }}</span>
+              </div>
+            }
+          </div>
+
+          @if (reportCard()!.results.length > 0) {
+            <div class="table-wrap">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th>Subject</th>
+                    <th>Marks Obtained</th>
+                    <th>Max Marks</th>
+                    <th>Percentage</th>
+                    <th>Grade</th>
+                    <th>Exams</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (r of reportCard()!.results; track r.subjectId) {
+                    <tr>
+                      <td><span class="cell-primary">{{ r.subjectName }}</span></td>
+                      <td>{{ r.marksObtained | number:'1.1-1' }}</td>
+                      <td>{{ r.maxMarks }}</td>
+                      <td>{{ r.percentage | number:'1.1-1' }}%</td>
+                      <td>
+                        <span class="grade-badge" [class]="gradeClass(r.letterGrade)">{{ r.letterGrade }}</span>
+                      </td>
+                      <td>{{ r.examCount }}</td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          } @else {
+            <div class="empty-state">
+              <p>No results found for this term</p>
+            </div>
+          }
+        </div>
+      </div>
+    </div>
+  }
+</div>

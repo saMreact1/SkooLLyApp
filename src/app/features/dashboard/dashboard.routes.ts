@@ -53,11 +53,11 @@ export const DASHBOARD_ROUTES: Routes = [
         loadChildren: () =>
           import('../attendance/attendance.routes').then(m => m.ATTENDANCE_ROUTES),
       },
-      // {
-      //   path: 'examinations',
-      //   loadChildren: () =>
-      //     import('../examinations/examinations.routes').then(m => m.EXAM_ROUTES),
-      // },
+      {
+        path: 'examinations',
+        loadChildren: () =>
+          import('../grades/grades.routes').then(m => m.GRADES_ROUTES),
+      },
       // {
       //   path: 'finance',
       //   loadChildren: () =>

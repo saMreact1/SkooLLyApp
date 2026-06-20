@@ -270,6 +270,9 @@
   letter-spacing: 0.5px;
   flex-shrink: 0;
 }
+.topbar__avatar--img {
+  object-fit: cover;
+}
 
 .topbar__user-name {
   font-size: 13px;

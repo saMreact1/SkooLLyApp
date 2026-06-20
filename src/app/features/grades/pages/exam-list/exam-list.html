@@ -1,0 +1,197 @@
+<div class="page">
+  <div class="page__header">
+    <div>
+      <h1 class="page__title">Grading</h1>
+      <p class="page__sub">Create exams, enter marks, and view grade sheets</p>
+    </div>
+    @if (isAdmin() || isTeacher()) {
+      <button class="btn btn--primary" (click)="openCreate()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+        </svg>
+        New exam
+      </button>
+    }
+  </div>
+
+  @if (successMessage()) {
+    <div class="toast toast--success">{{ successMessage() }}</div>
+  }
+  @if (errorMessage()) {
+    <div class="toast toast--error">{{ errorMessage() }}</div>
+  }
+
+  <div class="filters">
+    <label class="filter-group">
+      <span class="filter-label">Class</span>
+      <select class="filter-select" [ngModel]="selectedClassroomId()" (ngModelChange)="selectedClassroomId.set($event)">
+        <option [ngValue]="null">All classes</option>
+        @for (c of classrooms(); track c.id) {
+          <option [ngValue]="c.id">{{ c.name }} {{ c.section }}</option>
+        }
+      </select>
+    </label>
+    <label class="filter-group">
+      <span class="filter-label">Term</span>
+      <select class="filter-select" [ngModel]="selectedTermId()" (ngModelChange)="selectedTermId.set($event)">
+        <option [ngValue]="null">All terms</option>
+        @for (t of terms(); track t.id) {
+          <option [ngValue]="t.id">{{ t.name }}</option>
+        }
+      </select>
+    </label>
+  </div>
+
+  <!-- How it works -->
+  @if (filteredExams().length === 0 && !isLoading()) {
+    <div class="info-banner">
+      <div class="info-banner__icon">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <circle cx="12" cy="12" r="10"/><path d="M12 16v-4m0-4h.01"/>
+        </svg>
+      </div>
+      <div class="info-banner__text">
+        <strong>How grading works:</strong>
+        <ol>
+          <li><strong>Create an exam</strong> — pick a classroom, subject, and date</li>
+          <li><strong>Enter marks</strong> — type each student's score</li>
+          <li><strong>View grade sheet</strong> — see class rankings and statistics</li>
+        </ol>
+      </div>
+    </div>
+  }
+
+  @if (isLoading()) {
+    <div class="skeleton-list">
+      @for (i of [1,2,3]; track i) {
+        <div class="skeleton-card"></div>
+      }
+    </div>
+  } @else if (filteredExams().length === 0) {
+    <div class="empty-state">
+      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+        <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
+      </svg>
+      <p>No exams found</p>
+      @if (isAdmin() || isTeacher()) {
+        <button class="btn btn--primary" (click)="openCreate()">Create exam</button>
+      }
+    </div>
+  } @else {
+    <div class="exam-list">
+      @for (exam of filteredExams(); track exam.id) {
+        <div class="exam-card">
+          <div class="exam-card__main">
+            <div class="exam-card__top">
+              <div class="exam-card__info">
+                <span class="exam-card__name">{{ exam.name }}</span>
+                <span class="badge" [class]="typeBadge(exam.examType)">{{ exam.examType }}</span>
+              </div>
+              <span class="exam-card__date">{{ exam.examDate }}</span>
+            </div>
+            <div class="exam-card__meta">
+              <span>{{ exam.classroomName }} {{ exam.classroomSection }}</span>
+              <span class="dot">&middot;</span>
+              <span>{{ exam.subjectName }}</span>
+              <span class="dot">&middot;</span>
+              <span>Max: {{ exam.maxMarks }}</span>
+              @if (exam.weightage > 0) {
+                <span class="dot">&middot;</span>
+                <span>Weight: {{ exam.weightage }}%</span>
+              }
+              <span class="dot">&middot;</span>
+              <span>{{ exam.totalGrades }} grades</span>
+            </div>
+          </div>
+
+          <div class="exam-card__actions">
+            <a [routerLink]="['/app/examinations/entry', exam.id]" class="btn btn--grade">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <path d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+              </svg>
+              Enter marks
+            </a>
+            <a [routerLink]="['/app/examinations/sheet', exam.id]" class="btn btn--sheet">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <path d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+              </svg>
+              Grade sheet
+            </a>
+            @if (isAdmin()) {
+              <button class="btn btn--edit" (click)="openEdit(exam)">Edit</button>
+              <button class="btn btn--delete" (click)="delete(exam)">Delete</button>
+            }
+          </div>
+        </div>
+      }
+    </div>
+  }
+
+  @if (showCreateForm()) {
+    <div class="modal-backdrop" (click)="closeForm()"></div>
+    <div class="modal">
+      <div class="modal__header">
+        <h2 class="modal__title">{{ editingExam() ? 'Edit Exam' : 'Create Exam' }}</h2>
+        <button class="icon-btn" (click)="closeForm()">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+      <div class="modal__body">
+        <div class="form-grid">
+          <div class="form-field form-field--full">
+            <label class="form-label">Exam Name</label>
+            <input class="form-input" [ngModel]="formName()" (ngModelChange)="formName.set($event)" placeholder="e.g. Midterm Examination" />
+          </div>
+          <div class="form-field">
+            <label class="form-label">Exam Type</label>
+            <select class="form-select" [ngModel]="formExamType()" (ngModelChange)="formExamType.set($event)">
+              @for (opt of examTypeOptions; track opt.value) {
+                <option [value]="opt.value">{{ opt.label }}</option>
+              }
+            </select>
+          </div>
+          <div class="form-field">
+            <label class="form-label">Classroom</label>
+            <select class="form-select" [ngModel]="formClassroomId()" (ngModelChange)="formClassroomId.set($event)">
+              <option [ngValue]="null" disabled>Select classroom</option>
+              @for (c of classrooms(); track c.id) {
+                <option [ngValue]="c.id">{{ c.name }} {{ c.section }}</option>
+              }
+            </select>
+          </div>
+          <div class="form-field">
+            <label class="form-label">Subject</label>
+            <select class="form-select" [ngModel]="formSubjectId()" (ngModelChange)="formSubjectId.set($event)">
+              <option [ngValue]="null" disabled>Select subject</option>
+              @for (s of subjects(); track s.id) {
+                <option [ngValue]="s.id">{{ s.name }}</option>
+              }
+            </select>
+          </div>
+          <div class="form-field">
+            <label class="form-label">Exam Date</label>
+            <input class="form-input" type="date" [ngModel]="formExamDate()" (ngModelChange)="formExamDate.set($event)" />
+          </div>
+          <div class="form-field">
+            <label class="form-label">Max Marks</label>
+            <input class="form-input" type="number" [ngModel]="formMaxMarks()" (ngModelChange)="formMaxMarks.set($event)" min="1" />
+          </div>
+          <div class="form-field">
+            <label class="form-label">Weightage (%)</label>
+            <input class="form-input" type="number" [ngModel]="formWeightage()" (ngModelChange)="formWeightage.set($event)" min="0" max="100" />
+          </div>
+          <div class="form-field form-field--full">
+            <label class="form-label">Description</label>
+            <textarea class="form-input" rows="2" [ngModel]="formDescription()" (ngModelChange)="formDescription.set($event)"></textarea>
+          </div>
+        </div>
+      </div>
+      <div class="modal__footer">
+        <button class="btn btn--ghost" (click)="closeForm()">Cancel</button>
+        <button class="btn btn--primary" (click)="save()" [disabled]="isSaving()">
+          {{ isSaving() ? 'Saving...' : (editingExam() ? 'Update' : 'Create') }}
+        </button>
+      </div>
+    </div>
+  }
+</div>

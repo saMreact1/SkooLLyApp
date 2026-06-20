@@ -63,5 +63,6 @@ export interface StudentResponse {
   emergencyContactPhone:         string | null;
   emergencyContactRelationship:  string | null;
   schoolName:                    string;
+  profilePictureUrl:             string | null;
   createdAt:                     string;
 }

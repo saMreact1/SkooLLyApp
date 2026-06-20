@@ -142,9 +142,13 @@
 
               <!-- Name + avatar -->
               <td class="table__student-cell">
-                <div class="student-avatar" aria-hidden="true">
-                  {{ initials(student) }}
-                </div>
+                @if (student.profilePictureUrl) {
+                  <img class="student-avatar student-avatar--img" [src]="student.profilePictureUrl" alt="{{ fullName(student) }}" />
+                } @else {
+                  <div class="student-avatar" aria-hidden="true">
+                    {{ initials(student) }}
+                  </div>
+                }
                 <div class="student-info">
                   <span class="student-info__name">{{ fullName(student) }}</span>
                   <span class="student-info__email">{{ student.email }}</span>
