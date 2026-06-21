@@ -87,9 +87,12 @@
     <div class="modal">
       <div class="modal__header">
         <h2 class="modal__title">{{ reportCard()!.studentName }} — Report Card</h2>
-        <button class="icon-btn" (click)="closeReport()">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 18L18 6M6 6l12 12"/></svg>
-        </button>
+        <div style="display:flex;gap:8px;align-items:center">
+          <button class="btn btn--sm btn--primary" (click)="exportPdf()">Download PDF</button>
+          <button class="icon-btn" (click)="closeReport()">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 18L18 6M6 6l12 12"/></svg>
+          </button>
+        </div>
       </div>
       <div class="modal__body">
         <div class="report-card">

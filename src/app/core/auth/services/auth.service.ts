@@ -133,4 +133,9 @@ export class AuthService {
       `${this.api}/auth/school/${schoolId}/classrooms`
     ).pipe(map(res => res.data));
   }
+
+  getMySchool(): Observable<SchoolResponse> {
+    return this.http.get<ApiResponse<SchoolResponse>>(`${this.api}/schools/me`)
+      .pipe(map(res => res.data));
+  }
 }

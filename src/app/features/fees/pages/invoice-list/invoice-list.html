@@ -1,0 +1,195 @@
+<div class="page">
+  <div class="page__header">
+    <div>
+      <h1 class="page__title">Invoices</h1>
+      <p class="page__sub">
+        @if (isStudentView()) { My Fee Invoices }
+        @else if (isParentView()) { Child's Fee Invoices }
+        @else { Manage student fee invoices and collections }
+      </p>
+    </div>
+    @if (!isStudentOrParentView()) {
+      <button class="btn btn--primary" (click)="openGenerate()">Generate Invoices</button>
+    }
+  </div>
+
+  @if (successMessage()) { <div class="toast toast--success">{{ successMessage() }}</div> }
+  @if (errorMessage()) { <div class="toast toast--error">{{ errorMessage() }}</div> }
+
+  @if (!isStudentOrParentView()) {
+    <div class="filters">
+      <select class="filter-select" [ngModel]="selectedClassroomId()" (ngModelChange)="onClassChange($event)">
+        <option [ngValue]="null" disabled>Select class</option>
+        @for (c of classrooms(); track c.id) { <option [ngValue]="c.id">{{ c.name }} {{ c.section }}</option> }
+      </select>
+      <select class="filter-select" [ngModel]="selectedTermId()" (ngModelChange)="selectedTermId.set($event)">
+        <option [ngValue]="null" disabled>Select term</option>
+        @for (t of terms(); track t.id) { <option [ngValue]="t.id">{{ t.name }}</option> }
+      </select>
+      <select class="filter-select" [ngModel]="statusFilter()" (ngModelChange)="statusFilter.set($event)">
+        <option [ngValue]="null">All statuses</option>
+        @for (o of statusOptions; track o.value) { <option [ngValue]="o.value">{{ o.label }}</option> }
+      </select>
+    </div>
+  } @else {
+    <div class="filters">
+      <select class="filter-select" [ngModel]="statusFilter()" (ngModelChange)="statusFilter.set($event)">
+        <option [ngValue]="null">All statuses</option>
+        @for (o of statusOptions; track o.value) { <option [ngValue]="o.value">{{ o.label }}</option> }
+      </select>
+    </div>
+  }
+
+  @if (!isStudentOrParentView() && (selectedClassroomId() === null || selectedTermId() === null)) {
+    <div class="empty-state">
+      <svg width="180" height="140" viewBox="0 0 180 140" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect x="30" y="10" width="120" height="100" rx="8" fill="var(--bg-muted)" stroke="var(--border)" stroke-width="1.5"/>
+        <rect x="50" y="28" width="80" height="8" rx="4" fill="var(--border)"/>
+        <rect x="50" y="46" width="60" height="6" rx="3" fill="var(--border)" opacity="0.6"/>
+        <rect x="50" y="60" width="60" height="6" rx="3" fill="var(--border)" opacity="0.6"/>
+        <rect x="50" y="74" width="60" height="6" rx="3" fill="var(--border)" opacity="0.6"/>
+        <circle cx="135" cy="115" r="22" fill="var(--accent-soft, rgba(20,158,117,0.1))" stroke="var(--accent)" stroke-width="1.5"/>
+        <path d="M129 115h12M135 109v12" stroke="var(--accent)" stroke-width="2" stroke-linecap="round"/>
+        <rect x="14" y="90" width="32" height="32" rx="6" fill="var(--bg-muted)" stroke="var(--border)" stroke-width="1" transform="rotate(-8 14 90)"/>
+        <line x1="20" y1="100" x2="38" y2="100" stroke="var(--border)" stroke-width="1"/>
+        <line x1="20" y1="106" x2="32" y2="106" stroke="var(--border)" stroke-width="1" opacity="0.6"/>
+        <line x1="20" y1="112" x2="36" y2="112" stroke="var(--border)" stroke-width="1" opacity="0.6"/>
+      </svg>
+      <p>Select a class and term to view invoices</p>
+    </div>
+  } @else if (isLoading()) {
+    <div class="skeleton-list">Loading...</div>
+  } @else if (filteredInvoices().length === 0) {
+    <div class="empty-state"><p>No invoices found</p></div>
+  } @else {
+    <div class="card-list">
+      @for (inv of filteredInvoices(); track inv.id) {
+        <div class="card-row">
+          <div class="card-row__info">
+            <span class="card-row__name">
+              @if (!isStudentOrParentView()) { {{ inv.studentName }} }
+              Invoice {{ inv.invoiceNo }}
+              <span class="badge" [class]="statusBadge(inv.status)">{{ inv.status }}</span>
+            </span>
+            <span class="card-row__meta">
+              @if (!isStudentOrParentView()) { {{ inv.currentClass }} | }
+              {{ inv.termName }} | Total: {{ inv.totalAmount | number:'1.2-2' }} | Paid: {{ inv.paidAmount | number:'1.2-2' }} | Balance: <strong>{{ inv.balance | number:'1.2-2' }}</strong>
+            </span>
+          </div>
+          <div class="card-row__actions">
+            <button class="btn btn--sm" (click)="viewInvoice(inv)">View</button>
+            @if (!isStudentOrParentView() && inv.status !== 'PAID' && inv.status !== 'CANCELLED') {
+              <button class="btn btn--sm btn--primary" (click)="openPayment(inv)">Pay</button>
+            }
+          </div>
+        </div>
+      }
+    </div>
+  }
+
+  <!-- Generate modal (admin only) -->
+  @if (showGenerateForm()) {
+    <div class="modal-backdrop" (click)="showGenerateForm.set(false)"></div>
+    <div class="modal">
+      <div class="modal__header">
+        <h2 class="modal__title">Generate Invoices</h2>
+        <button class="icon-btn" (click)="showGenerateForm.set(false)">&times;</button>
+      </div>
+      <div class="modal__body">
+        <p class="modal__hint">Select fee plans to include in invoices for this class and term.</p>
+        @for (p of feePlans(); track p.id) {
+          <label class="checkbox-row">
+            <input type="checkbox" [checked]="generateSelectedPlanIds().includes(p.id)" (change)="togglePlanSelection(p.id)" />
+            <span>{{ p.feeTypeName }} — {{ p.amount | number:'1.2-2' }} (due {{ p.dueDate }})</span>
+          </label>
+        }
+        @if (feePlans().length === 0) {
+          <p class="empty-state" style="padding:20px">No fee plans for this class and term</p>
+        }
+      </div>
+      <div class="modal__footer">
+        <button class="btn btn--ghost" (click)="showGenerateForm.set(false)">Cancel</button>
+        <button class="btn btn--primary" (click)="generate()" [disabled]="isGenerating() || generateSelectedPlanIds().length === 0">
+          {{ isGenerating() ? 'Generating...' : 'Generate' }}
+        </button>
+      </div>
+    </div>
+  }
+
+  <!-- Payment modal (admin only) -->
+  @if (showPaymentForm()) {
+    <div class="modal-backdrop" (click)="showPaymentForm.set(false)"></div>
+    <div class="modal">
+      <div class="modal__header">
+        <h2 class="modal__title">Record Payment</h2>
+        <button class="icon-btn" (click)="showPaymentForm.set(false)">&times;</button>
+      </div>
+      <div class="modal__body">
+        <div class="form-field">
+          <label class="form-label">Amount</label>
+          <input class="form-input" type="number" [ngModel]="paymentAmount()" (ngModelChange)="paymentAmount.set($event)" min="0" step="0.01" />
+        </div>
+        <div class="form-field">
+          <label class="form-label">Payment Mode</label>
+          <select class="form-select" [ngModel]="paymentMode()" (ngModelChange)="paymentMode.set($event)">
+            @for (o of paymentModeOptions; track o.value) { <option [value]="o.value">{{ o.label }}</option> }
+          </select>
+        </div>
+        <div class="form-field">
+          <label class="form-label">Reference</label>
+          <input class="form-input" [ngModel]="paymentReference()" (ngModelChange)="paymentReference.set($event)" placeholder="Optional ref number" />
+        </div>
+        <div class="form-field">
+          <label class="form-label">Payment Date</label>
+          <input class="form-input" type="date" [ngModel]="paymentDate()" (ngModelChange)="paymentDate.set($event)" />
+        </div>
+      </div>
+      <div class="modal__footer">
+        <button class="btn btn--ghost" (click)="showPaymentForm.set(false)">Cancel</button>
+        <button class="btn btn--primary" (click)="submitPayment()" [disabled]="isSavingPayment() || !paymentAmount()">
+          {{ isSavingPayment() ? 'Saving...' : 'Record Payment' }}
+        </button>
+      </div>
+    </div>
+  }
+
+  <!-- Invoice detail modal -->
+  @if (showInvoiceDetail() && selectedInvoice()) {
+    <div class="modal-backdrop" (click)="closeDetail()"></div>
+    <div class="modal modal--wide">
+      <div class="modal__header">
+        <h2 class="modal__title">Invoice {{ selectedInvoice()!.invoiceNo }}</h2>
+        <div style="display:flex;gap:8px;align-items:center">
+          <button class="btn btn--sm" (click)="exportPdf(selectedInvoice()!)">Download PDF</button>
+          <button class="icon-btn" (click)="closeDetail()">&times;</button>
+        </div>
+      </div>
+      <div class="modal__body">
+        <div class="detail-grid">
+          @if (!isStudentOrParentView()) {
+            <div><strong>Student:</strong> {{ selectedInvoice()!.studentName }}</div>
+            <div><strong>Admission No:</strong> {{ selectedInvoice()!.admissionNumber }}</div>
+          }
+          <div><strong>Class:</strong> {{ selectedInvoice()!.currentClass }}</div>
+          <div><strong>Term:</strong> {{ selectedInvoice()!.termName }}</div>
+          <div><strong>Status:</strong> <span class="badge" [class]="statusBadge(selectedInvoice()!.status)">{{ selectedInvoice()!.status }}</span></div>
+        </div>
+
+        <h3 class="section-title">Items</h3>
+        <table class="table">
+          <thead><tr><th>Fee Type</th><th>Amount</th></tr></thead>
+          <tbody>
+            @for (item of selectedInvoice()!.items; track item.id) {
+              <tr><td>{{ item.feeTypeName }}</td><td>{{ item.amount | number:'1.2-2' }}</td></tr>
+            }
+          </tbody>
+          <tfoot>
+            <tr><td><strong>Total</strong></td><td><strong>{{ selectedInvoice()!.totalAmount | number:'1.2-2' }}</strong></td></tr>
+            <tr><td>Paid</td><td>{{ selectedInvoice()!.paidAmount | number:'1.2-2' }}</td></tr>
+            <tr><td><strong>Balance</strong></td><td><strong>{{ selectedInvoice()!.balance | number:'1.2-2' }}</strong></td></tr>
+          </tfoot>
+        </table>
+      </div>
+    </div>
+  }
+</div>

@@ -58,11 +58,11 @@ export const DASHBOARD_ROUTES: Routes = [
         loadChildren: () =>
           import('../grades/grades.routes').then(m => m.GRADES_ROUTES),
       },
-      // {
-      //   path: 'finance',
-      //   loadChildren: () =>
-      //     import('../finance/finance.routes').then(m => m.FINANCE_ROUTES),
-      // },
+      {
+        path: 'finance',
+        loadChildren: () =>
+          import('../fees/fees.routes').then(m => m.feesRoutes),
+      },
       // {
       //   path: 'administration',
       //   canActivate: [roleGuard],
