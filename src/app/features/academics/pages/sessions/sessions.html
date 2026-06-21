@@ -24,6 +24,30 @@
     </div>
   }
 
+  @if (needsUpdateAlerts().length > 0 && isAdmin()) {
+    <div class="date-update-alert">
+      <div class="date-update-alert__icon">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <path d="M12 9v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+      </div>
+      <div class="date-update-alert__content">
+        <strong>Action required:</strong> Some academic periods were automatically created and need their dates updated.
+        <ul class="date-update-alert__list">
+          @for (alert of needsUpdateAlerts(); track alert.name) {
+            <li>
+              @if (alert.type === 'session') {
+                Session <strong>{{ alert.name }}</strong> — please set start and end dates
+              } @else {
+                {{ alert.name }} in <strong>{{ alert.sessionName }}</strong> — please set start and end dates
+              }
+            </li>
+          }
+        </ul>
+      </div>
+    </div>
+  }
+
   @if (isLoading()) {
     <div class="session-grid">
       @for (i of [1,2,3]; track i) {
@@ -100,6 +124,15 @@
                       </button>
                     }
                     @if (isAdmin()) {
+                      <button class="icon-btn"
+                              (click)="openEditTermPanel(term, session)"
+                              aria-label="Edit term">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
+                             stroke="currentColor" stroke-width="2" aria-hidden="true">
+                          <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
+                          <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                        </svg>
+                      </button>
                       <button class="icon-btn icon-btn--danger"
                               (click)="deleteTerm(session.id, term)"
                               [attr.aria-label]="'Delete ' + term.name">
@@ -263,6 +296,64 @@
             <span class="spinner" aria-hidden="true"></span> Adding...
           } @else {
             Add term
+          }
+        </button>
+      </form>
+    </aside>
+  }
+
+  <!-- Edit term panel -->
+  @if (isAdmin() && editingTerm()) {
+    <div class="panel-backdrop" (click)="closeEditPanel()" aria-hidden="true"></div>
+    <aside class="panel" role="dialog" aria-modal="true" aria-label="Edit term">
+      <div class="panel__header">
+        <h2 class="panel__title">Edit term</h2>
+        <button class="panel__close" (click)="closeEditPanel()" aria-label="Close">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none"
+               stroke="currentColor" stroke-width="2.5" aria-hidden="true">
+            <line x1="18" y1="6" x2="6" y2="18"/>
+            <line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+      </div>
+      <p class="panel__subtitle">
+        Editing in <strong>{{ editingTermSession()!.name }}</strong>
+      </p>
+
+      @if (errorMessage()) {
+        <div class="alert alert--error">{{ errorMessage() }}</div>
+      }
+
+      <form [formGroup]="editTermForm" (ngSubmit)="submitEditTerm()" novalidate>
+        <div class="field">
+          <label class="field__label">Term name</label>
+          <input type="text" formControlName="name"
+                 class="field__input"
+                 placeholder="e.g. First Term"
+                 list="term-suggestions"/>
+          @if (editTermForm.controls.name.invalid && editTermForm.controls.name.touched) {
+            <span class="field__error">Term name is required</span>
+          }
+        </div>
+        <div class="field">
+          <label class="field__label">Start date</label>
+          <input type="date" formControlName="startDate" class="field__input"/>
+          @if (editTermForm.controls.startDate.invalid && editTermForm.controls.startDate.touched) {
+            <span class="field__error">Start date is required</span>
+          }
+        </div>
+        <div class="field">
+          <label class="field__label">End date</label>
+          <input type="date" formControlName="endDate" class="field__input"/>
+          @if (editTermForm.controls.endDate.invalid && editTermForm.controls.endDate.touched) {
+            <span class="field__error">End date is required</span>
+          }
+        </div>
+        <button type="submit" class="btn-primary btn--full" [disabled]="isSubmitting()">
+          @if (isSubmitting()) {
+            <span class="spinner" aria-hidden="true"></span> Saving...
+          } @else {
+            Save changes
           }
         </button>
       </form>
