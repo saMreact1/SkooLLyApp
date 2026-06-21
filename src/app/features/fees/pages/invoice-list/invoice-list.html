@@ -33,6 +33,10 @@
     </div>
   } @else {
     <div class="filters">
+      <select class="filter-select" [ngModel]="selectedTermId()" (ngModelChange)="onStudentTermChange($event)">
+        <option [ngValue]="null">Select term</option>
+        @for (t of terms(); track t.id) { <option [ngValue]="t.id">{{ t.name }}</option> }
+      </select>
       <select class="filter-select" [ngModel]="statusFilter()" (ngModelChange)="statusFilter.set($event)">
         <option [ngValue]="null">All statuses</option>
         @for (o of statusOptions; track o.value) { <option [ngValue]="o.value">{{ o.label }}</option> }
@@ -40,7 +44,8 @@
     </div>
   }
 
-  @if (!isStudentOrParentView() && (selectedClassroomId() === null || selectedTermId() === null)) {
+  @if ((!isStudentOrParentView() && (selectedClassroomId() === null || selectedTermId() === null))
+       || (isStudentOrParentView() && selectedTermId() === null)) {
     <div class="empty-state">
       <svg width="180" height="140" viewBox="0 0 180 140" fill="none" xmlns="http://www.w3.org/2000/svg">
         <rect x="30" y="10" width="120" height="100" rx="8" fill="var(--bg-muted)" stroke="var(--border)" stroke-width="1.5"/>
@@ -55,7 +60,7 @@
         <line x1="20" y1="106" x2="32" y2="106" stroke="var(--border)" stroke-width="1" opacity="0.6"/>
         <line x1="20" y1="112" x2="36" y2="112" stroke="var(--border)" stroke-width="1" opacity="0.6"/>
       </svg>
-      <p>Select a class and term to view invoices</p>
+      <p>@if (isStudentOrParentView()) { Select a term to view invoices } @else { Select a class and term to view invoices }</p>
     </div>
   } @else if (isLoading()) {
     <div class="skeleton-list">Loading...</div>
