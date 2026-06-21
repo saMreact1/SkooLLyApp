@@ -65,7 +65,7 @@ export class InvoiceList implements OnInit {
   ngOnInit(): void {
     this.authService.getMySchool().subscribe({ next: school => this.schoolInfo.set(school) });
     if (this.isStudentOrParentView()) {
-      this.loadStudentInvoices();
+      this.loadTermsForStudent();
     } else {
       this.loadClassroomsAndTerms();
     }
@@ -82,7 +82,22 @@ export class InvoiceList implements OnInit {
     });
   }
 
-  private loadStudentInvoices(): void {
+  private loadTermsForStudent(): void {
+    this.academicService.getSessions(0, 20).subscribe({
+      next: res => {
+        const s = res.content.find(x => x.status === 'ACTIVE') ?? res.content[0];
+        this.currentSession.set(s ?? null);
+        if (s) this.academicService.getTermsBySession(s.id).subscribe({ next: (t: any[]) => this.terms.set(t) });
+      },
+    });
+  }
+
+  onStudentTermChange(termId: number | null): void {
+    this.selectedTermId.set(termId);
+    if (termId === null) {
+      this.invoices.set([]);
+      return;
+    }
     this.isLoading.set(true);
     this.studentService.getMyProfile().subscribe({
       next: profile => {
