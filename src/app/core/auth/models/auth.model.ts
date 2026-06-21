@@ -98,6 +98,9 @@ export interface UserResponse {
   firstName: string;
   lastName: string;
   phoneNumber: string;
+  dateOfBirth: string;
+  gender: string;
+  address: string;
   role: UserRole;
   enabled: boolean;
   profilePictureUrl: string | null;
