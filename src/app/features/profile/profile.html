@@ -1,0 +1,109 @@
+<div class="profile">
+  <div class="profile__header">
+    <h1 class="profile__title">My Profile</h1>
+    <p class="profile__subtitle">Manage your personal information</p>
+  </div>
+
+  @if (loading()) {
+    <div class="profile__loading">
+      <div class="profile__spinner"></div>
+      <p>Loading profile...</p>
+    </div>
+  } @else {
+    <div class="profile__card">
+      <!-- Avatar Section -->
+      <div class="profile__avatar-section">
+        <div class="profile__avatar-wrapper">
+          @if (user()?.profilePictureUrl) {
+            <img class="profile__avatar-img" [src]="user()!.profilePictureUrl" alt="Profile picture" />
+          } @else {
+            <div class="profile__avatar-initials">{{ avatarText() }}</div>
+          }
+          <label class="profile__avatar-upload" [class.profile__avatar-upload--busy]="uploading()">
+            @if (uploading()) {
+              <div class="profile__upload-spinner"></div>
+            } @else {
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/>
+                <circle cx="12" cy="13" r="4"/>
+              </svg>
+            }
+            <input type="file" accept="image/*" (change)="onFileSelected($event)" hidden />
+          </label>
+        </div>
+        <div class="profile__avatar-info">
+          <h2 class="profile__name">{{ user()!.firstName }} {{ user()!.lastName }}</h2>
+          <span class="profile__role">{{ roleName() }}</span>
+          <span class="profile__email">{{ user()!.email }}</span>
+        </div>
+      </div>
+
+      <!-- Edit Form -->
+      <div class="profile__form">
+        @if (success()) {
+          <div class="profile__alert profile__alert--success">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M22 11.08V12a10 10 0 11-5.93-9.14"/>
+              <polyline points="22 4 12 14.01 9 11.01"/>
+            </svg>
+            Profile updated successfully
+          </div>
+        }
+
+        @if (error()) {
+          <div class="profile__alert profile__alert--error">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"/>
+              <line x1="15" y1="9" x2="9" y2="15"/>
+              <line x1="9" y1="9" x2="15" y2="15"/>
+            </svg>
+            {{ error() }}
+          </div>
+        }
+
+        <div class="profile__form-grid">
+          <div class="profile__field">
+            <label class="profile__label">First Name</label>
+            <input class="profile__input" type="text" [ngModel]="firstName"
+                   (ngModelChange)="onFieldChange('firstName', $event)" />
+          </div>
+
+          <div class="profile__field">
+            <label class="profile__label">Last Name</label>
+            <input class="profile__input" type="text" [ngModel]="lastName"
+                   (ngModelChange)="onFieldChange('lastName', $event)" />
+          </div>
+
+          <div class="profile__field">
+            <label class="profile__label">Email</label>
+            <input class="profile__input profile__input--readonly" type="email" [value]="user()!.email" readonly />
+          </div>
+
+          <div class="profile__field">
+            <label class="profile__label">Phone Number</label>
+            <input class="profile__input" type="tel" [ngModel]="phoneNumber"
+                   (ngModelChange)="onFieldChange('phoneNumber', $event)" />
+          </div>
+
+          <div class="profile__field profile__field--full">
+            <label class="profile__label">Address</label>
+            <input class="profile__input" type="text" [ngModel]="address"
+                   (ngModelChange)="onFieldChange('address', $event)" />
+          </div>
+        </div>
+
+        <div class="profile__actions">
+          <button class="profile__btn profile__btn--secondary" (click)="loadProfile()">Cancel</button>
+          <button class="profile__btn profile__btn--primary" (click)="saveProfile()" [disabled]="saving()">
+            @if (saving()) {
+              <div class="profile__btn-spinner"></div>
+              Saving...
+            } @else {
+              Save Changes
+            }
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+</div>

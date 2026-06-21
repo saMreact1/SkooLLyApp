@@ -67,6 +67,10 @@ export class Topbar {
     void this.router.navigate(['/app/communication/announcements']);
   }
 
+  goToProfile(): void {
+    void this.router.navigate(['/app/profile']);
+  }
+
   @HostListener('document:click', ['$event'])
   onDocClick(event: MouseEvent): void {
     const target = event.target as HTMLElement;

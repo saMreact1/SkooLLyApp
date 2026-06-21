@@ -63,6 +63,11 @@ export const DASHBOARD_ROUTES: Routes = [
         loadChildren: () =>
           import('../fees/fees.routes').then(m => m.feesRoutes),
       },
+      {
+        path: 'profile',
+        loadComponent: () =>
+          import('../profile/profile').then(m => m.Profile),
+      },
       // {
       //   path: 'administration',
       //   canActivate: [roleGuard],

@@ -138,4 +138,17 @@ export class AuthService {
     return this.http.get<ApiResponse<SchoolResponse>>(`${this.api}/schools/me`)
       .pipe(map(res => res.data));
   }
+
+  getMyProfile(): Observable<UserResponse> {
+    return this.http.get<ApiResponse<UserResponse>>(`${this.api}/users/profile`)
+      .pipe(map(res => res.data));
+  }
+
+  updateMyProfile(payload: Partial<UserResponse>): Observable<UserResponse> {
+    return this.http.put<ApiResponse<UserResponse>>(`${this.api}/users/profile`, payload)
+      .pipe(
+        map(res => res.data),
+        tap(user => this.persistUser(user))
+      );
+  }
 }
