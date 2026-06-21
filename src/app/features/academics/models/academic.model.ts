@@ -26,6 +26,7 @@ export interface SessionResponse {
   endDate:    string;
   status:     SessionStatus;
   isCurrent:  boolean;
+  needsDateUpdate: boolean;
   schoolName: string;
   terms:      TermResponse[];
   createdAt:        string;
@@ -71,6 +72,12 @@ export interface CreateTermRequest {
   endDate:   string;
 }
 
+export interface UpdateTermRequest {
+  name:      string;
+  startDate: string;
+  endDate:   string;
+}
+
 export interface TermResponse {
   id:          number;
   sessionId:   number;
@@ -80,6 +87,7 @@ export interface TermResponse {
   endDate:     string;
   status:      TermStatus;
   isCurrent:   boolean;
+  needsDateUpdate: boolean;
   createdAt:   string;
 }
 

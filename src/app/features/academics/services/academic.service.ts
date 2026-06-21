@@ -7,7 +7,7 @@ import { PagedResponse } from '../../../shared/models/paged-response.model';
 import {
   ApiResponse,
   CreateSessionRequest,   SessionResponse,
-  CreateTermRequest,      TermResponse,
+  CreateTermRequest,      UpdateTermRequest,      TermResponse,
   CreateSubjectRequest,   UpdateSubjectRequest,   SubjectResponse,
   CreateClassroomRequest, UpdateClassroomRequest, ClassroomResponse,
   CreateTimetableRequest, TimetableResponse,
@@ -80,6 +80,12 @@ export class AcademicService {
       .get<ApiResponse<TermResponse[]>>(
         `${this.api}/sessions/${sessionId}/terms`
       )
+      .pipe(map(r => r.data));
+  }
+
+  updateTerm(id: number, payload: UpdateTermRequest): Observable<TermResponse> {
+    return this.http
+      .put<ApiResponse<TermResponse>>(`${this.api}/terms/${id}`, payload)
       .pipe(map(r => r.data));
   }
 

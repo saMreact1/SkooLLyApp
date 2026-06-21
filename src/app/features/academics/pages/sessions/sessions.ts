@@ -34,6 +34,8 @@ export class Sessions implements OnInit {
   readonly isSubmitting = signal(false);
   readonly panelOpen = signal(false);
   readonly termPanelFor = signal<SessionResponse | null>(null);
+  readonly editingTerm = signal<TermResponse | null>(null);
+  readonly editingTermSession = signal<SessionResponse | null>(null);
   readonly errorMessage = signal<string | null>(null);
 
   readonly sessionForm = this.fb.group({
@@ -48,6 +50,12 @@ export class Sessions implements OnInit {
     endDate: ['', Validators.required],
   });
 
+  readonly editTermForm = this.fb.group({
+    name: ['', Validators.required],
+    startDate: ['', Validators.required],
+    endDate: ['', Validators.required],
+  });
+
   readonly termSuggestions = [
     'First Term', 'Second Term', 'Third Term'
   ];
@@ -55,6 +63,21 @@ export class Sessions implements OnInit {
   readonly currentSession = computed<SessionResponse | null>(() =>
     this.sessions().find(s => s.isCurrent) ?? null
   );
+
+  readonly needsUpdateAlerts = computed(() => {
+    const alerts: { type: 'session' | 'term'; name: string; sessionName?: string }[] = [];
+    for (const session of this.sessions()) {
+      if (session.needsDateUpdate) {
+        alerts.push({ type: 'session', name: session.name });
+      }
+      for (const term of session.terms) {
+        if (term.needsDateUpdate) {
+          alerts.push({ type: 'term', name: term.name, sessionName: session.name });
+        }
+      }
+    }
+    return alerts;
+  });
 
   readonly isAdmin = computed(() => {
     const r = this.tokens.currentRole();
@@ -170,6 +193,46 @@ export class Sessions implements OnInit {
   closePanel(): void {
     this.panelOpen.set(false);
     this.termPanelFor.set(null);
+    this.errorMessage.set(null);
+  }
+
+  openEditTermPanel(term: TermResponse, session: SessionResponse): void {
+    this.editingTerm.set(term);
+    this.editingTermSession.set(session);
+    this.editTermForm.patchValue({
+      name: term.name,
+      startDate: term.startDate,
+      endDate: term.endDate,
+    });
+    this.errorMessage.set(null);
+  }
+
+  submitEditTerm(): void {
+    if (this.editTermForm.invalid) { this.editTermForm.markAllAsTouched(); return; }
+    const term = this.editingTerm();
+    if (!term) return;
+    this.isSubmitting.set(true);
+    const v = this.editTermForm.getRawValue();
+    this.academic.updateTerm(term.id, {
+      name: v.name!,
+      startDate: v.startDate!,
+      endDate: v.endDate!,
+    }).subscribe({
+      next: () => {
+        this.loadSessions();
+        this.closeEditPanel();
+        this.isSubmitting.set(false);
+      },
+      error: err => {
+        this.errorMessage.set(err?.error?.message ?? 'Failed to update term');
+        this.isSubmitting.set(false);
+      },
+    });
+  }
+
+  closeEditPanel(): void {
+    this.editingTerm.set(null);
+    this.editingTermSession.set(null);
     this.errorMessage.set(null);
   }
 

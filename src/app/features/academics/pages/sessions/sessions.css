@@ -119,6 +119,37 @@
   box-shadow: 0 0 0 3px var(--box-shadow);
 }
 
+/* ─── Date update alert ────────────────────────────────────────────────────── */
+.date-update-alert {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 14px 16px;
+  background: #FEF3C7;
+  border: 0.5px solid #F59E0B;
+  border-radius: 8px;
+  font-size: 13px;
+  color: #92400E;
+  margin-bottom: 16px;
+  line-height: 1.5;
+}
+[data-theme='dark'] .date-update-alert {
+  background: #422006;
+  border-color: #92400E;
+  color: #FDE68A;
+}
+.date-update-alert__icon {
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+.date-update-alert__list {
+  margin: 6px 0 0;
+  padding-left: 18px;
+}
+.date-update-alert__list li {
+  margin-bottom: 2px;
+}
+
 /* ─── Skeleton ───────────────────────────────────────────────────────────────── */
 .session-grid {
   display: flex;
